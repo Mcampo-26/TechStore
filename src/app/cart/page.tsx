@@ -5,55 +5,57 @@ import { AiOutlinePlus, AiOutlineMinus } from "react-icons/ai";
 import { ShoppingBag, Trash2, AlertTriangle } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useProductStore } from "@/store/useProductStore"; // Importado para corregir TS
 import Link from "next/link";
 
-// Componente para cada fila del carrito para manejar su propia animación
+// Componente para cada fila del carrito
 const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   const [showError, setShowError] = useState(false);
 
+  // Protegemos valores para evitar NaN en el renderizado
+  const price = Number(item.price) || 0;
+  const quantity = Number(item.quantity) || 0;
+  const stock = Number(item.stock) || 0;
+
   const handleIncrease = () => {
-    if (item.quantity >= item.stock) {
-      // Activa la animación
+    if (quantity >= stock) {
       setShowError(true);
-      // La quitamos después de 2 segundos
       setTimeout(() => setShowError(false), 2000);
     } else {
-      updateQuantity(item.id, item.quantity + 1, userId);
+      updateQuantity(item.id, quantity + 1, userId);
     }
   };
 
   return (
-    <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm flex items-center gap-4 border border-transparent">
+    <div className="bg-white p-4 rounded-xl shadow-sm flex items-center gap-4 border border-transparent">
       <img src={item.image} alt={item.name} className="w-24 h-24 object-contain" />
       
       <div className="flex-grow">
         <h3 className="text-gray-800 font-medium">{item.name}</h3>
         
         <div className="flex items-center justify-between mt-4">
-          <div className="relative"> {/* Contenedor relativo para el aviso flotante */}
-            
-            {/* AVISO ANIMADO */}
+          <div className="relative">
             {showError && (
               <div className="absolute -top-10 left-0 bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg animate-bounce flex items-center gap-1 z-10">
                 <AlertTriangle size={10} className="text-yellow-400" />
-                Solo hay {item.stock} disponibles
+                Solo hay {stock} disponibles
               </div>
             )}
 
             <div className={`flex items-center border border-gray-300 rounded-lg overflow-hidden transition-transform ${showError ? 'animate-shake border-red-500' : ''}`}>
               <button 
-                onClick={() => updateQuantity(item.id, item.quantity - 1, userId)} 
+                onClick={() => updateQuantity(item.id, quantity - 1, userId)} 
                 className="p-2 hover:bg-gray-50 disabled:opacity-20" 
-                disabled={item.quantity <= 1}
+                disabled={quantity <= 1}
               >
                 <AiOutlineMinus />
               </button>
 
-              <span className="px-4 font-bold text-gray-700">{item.quantity}</span>
+              <span className="px-4 font-bold text-gray-700">{quantity}</span>
 
               <button 
                 onClick={handleIncrease} 
-                className={`p-2 transition-colors ${item.quantity >= item.stock ? 'text-gray-300' : 'text-blue-600 hover:bg-gray-50'}`}
+                className={`p-2 transition-colors ${quantity >= stock ? 'text-gray-300' : 'text-blue-600 hover:bg-gray-50'}`}
               >
                 <AiOutlinePlus />
               </button>
@@ -67,20 +69,36 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
       </div>
 
       <div className="text-right min-w-[100px]">
-        <p className="text-xl font-light">$ {(item.price * item.quantity).toLocaleString('es-AR')}</p>
+        {/* Cálculo seguro del subtotal por producto */}
+        <p className="text-xl font-light">$ {(price * quantity).toLocaleString('es-AR')}</p>
       </div>
     </div>
   );
 };
 
 export default function CarritoPage() {
-  const { cart, removeFromCart, updateQuantity } = useCartStore();
+  const { cart, removeFromCart, updateQuantity, revalidateCartStock } = useCartStore();
   const { user } = useAuthStore();
+  const { products } = useProductStore(); // Extraído para corregir el error ts(2304)
   const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => { 
+    setIsMounted(true); 
+  }, []);
 
-  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  // Revalidación cuando cambian los productos o el usuario
+  useEffect(() => {
+    if (isMounted && products.length > 0) {
+      revalidateCartStock();
+    }
+  }, [isMounted, user, products, revalidateCartStock]);
+
+  // Cálculo seguro del subtotal general
+  const subtotal = cart.reduce((acc, item) => {
+    const p = Number(item.price) || 0;
+    const q = Number(item.quantity) || 0;
+    return acc + (p * q);
+  }, 0);
 
   if (!isMounted) return null;
 

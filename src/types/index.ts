@@ -1,12 +1,12 @@
 export interface Product {
-    _id: string;
+    _id: string;      // Obligatorio para MongoDB
+    id?: string;     // Opcional para compatibilidad en Frontend
     name: string;
     description: string;
     price: number;
-    image: string;      // Foto 1
-    image2?: string;     // Foto 2 (opcional)
-    image3?: string;     // Foto 3 (opcional)
-    category: string;
+    image: string;
     stock: number;
-    
-}
+    category?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  }

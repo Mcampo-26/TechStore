@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import Swal from 'sweetalert2'; // <--- Asegúrate de tener instalado sweetalert2
+import Swal from 'sweetalert2';
+import { useProductStore } from './useProductStore';
 
 export interface CartItem {
   id: string;
@@ -8,63 +9,75 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
-  stock: number; 
+  stock: number;
 }
 
 interface CartState {
   cart: CartItem[];
-  setCart: (newCart: CartItem[]) => void;
+  // Agregamos setCart para que no falle la llamada desde otros componentes
+  setCart: (cart: CartItem[]) => void;
   addToCart: (product: any, userId?: string) => Promise<void>;
   removeFromCart: (productId: string, userId?: string) => Promise<void>;
-  updateQuantity: (productId: string, quantity: number, userId?: string) => Promise<void>;
-  clearCart: () => void;
-  getTotalItems: () => number;
+  updateQuantity: (productId: string, newQuantity: number, userId?: string) => Promise<void>;
+  clearCart: (userId?: string) => Promise<void>;
+  revalidateCartStock: () => void;
 }
+
+// Función auxiliar para sincronizar con la API de MongoDB
+const syncWithMongo = async (userId: string, cart: CartItem[]) => {
+  try {
+    await fetch('/api/cart/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, cart }),
+    });
+  } catch (error) {
+    console.error("Error sincronizando carrito:", error);
+  }
+};
 
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       cart: [],
 
-      setCart: (newCart) => {
-        set({ cart: newCart });
-      },
+      // Implementación de setCart para actualizar el carrito de golpe
+      setCart: (cart) => set({ cart }),
 
       addToCart: async (product, userId) => {
         const currentCart = get().cart;
         const productId = product._id || product.id;
         const existing = currentCart.find((item) => item.id === productId);
+        
+        // Priorizar stock real del servidor si viene en el objeto product
+        const realStock = typeof product.stock !== 'undefined' ? product.stock : (existing?.stock || 0);
 
         let updatedCart;
+
         if (existing) {
-          // VALIDACIÓN: Si ya existe en el carrito
-          if (existing.quantity >= (product.stock || existing.stock)) {
-            // AVISO DE STOCK AGOTADO
+          if (existing.quantity + 1 > realStock) {
             Swal.fire({
               title: 'Límite alcanzado',
-              text: `Lo sentimos, solo quedan ${existing.stock} unidades en stock.`,
+              text: `Lo sentimos, solo quedan ${realStock} unidades disponibles.`,
               icon: 'warning',
               confirmButtonColor: '#3483fa',
               timer: 3000
             });
-            return; // Cortamos la ejecución aquí, no actualizamos nada
+            return;
           }
-
           updatedCart = currentCart.map((item) =>
-            item.id === productId ? { ...item, quantity: item.quantity + 1 } : item
+            item.id === productId ? { ...item, quantity: item.quantity + 1, stock: realStock } : item
           );
         } else {
-          // Si es un producto nuevo, verificamos que al menos haya 1 en stock
-          if (product.stock < 1) {
+          if (realStock < 1) {
             Swal.fire({
               title: 'Sin stock',
-              text: 'Este producto no tiene unidades disponibles.',
+              text: 'Producto no disponible.',
               icon: 'error',
               confirmButtonColor: '#3483fa'
             });
             return;
           }
-
           updatedCart = [
             ...currentCart,
             {
@@ -73,16 +86,13 @@ export const useCartStore = create<CartState>()(
               price: product.price,
               image: product.image,
               quantity: 1,
-              stock: product.stock, 
+              stock: realStock,
             },
           ];
         }
 
         set({ cart: updatedCart });
-
-        if (userId) {
-          await syncWithMongo(userId, updatedCart);
-        }
+        if (userId) await syncWithMongo(userId, updatedCart);
       },
 
       removeFromCart: async (productId, userId) => {
@@ -91,39 +101,47 @@ export const useCartStore = create<CartState>()(
         if (userId) await syncWithMongo(userId, updatedCart);
       },
 
-      updateQuantity: async (productId, quantity, userId) => {
-        if (quantity < 1) return;
-
+      updateQuantity: async (productId, newQuantity, userId) => {
         const updatedCart = get().cart.map((item) => {
           if (item.id === productId) {
-            // VALIDACIÓN: No permitimos que quantity supere el stock
-            if (quantity > item.stock) {
-              Swal.fire({
-                toast: true,
-                position: 'top-end',
-                title: 'Stock máximo alcanzado',
-                icon: 'info',
-                showConfirmButton: false,
-                timer: 2000
-              });
-              return { ...item, quantity: item.stock };
-            }
-            return { ...item, quantity };
+            const validatedQty = Math.max(1, Math.min(newQuantity, item.stock));
+            return { ...item, quantity: validatedQty };
+          }
+          return item;
+        });
+        set({ cart: updatedCart });
+        if (userId) await syncWithMongo(userId, updatedCart);
+      },
+
+      clearCart: async (userId) => {
+        set({ cart: [] });
+        if (userId) await syncWithMongo(userId, []);
+      },
+
+      revalidateCartStock: () => {
+        const productsFromStore = useProductStore.getState().products;
+        const currentCart = get().cart;
+
+        if (productsFromStore.length === 0 || currentCart.length === 0) return;
+
+        const validatedCart = currentCart.map((item) => {
+          const freshProduct = productsFromStore.find((p) => (p._id || p.id) === item.id);
+          if (freshProduct) {
+            const validatedQuantity = Math.min(item.quantity, freshProduct.stock);
+            return { 
+              ...item, 
+              quantity: validatedQuantity, 
+              stock: freshProduct.stock 
+            };
           }
           return item;
         });
 
-        set({ cart: updatedCart });
-
-        if (userId) {
-          await syncWithMongo(userId, updatedCart);
+        const hasChanges = JSON.stringify(validatedCart) !== JSON.stringify(currentCart);
+        if (hasChanges) {
+          set({ cart: validatedCart });
+          console.log("🛠️ Carrito revalidado con el stock actual.");
         }
-      },
-
-      clearCart: () => set({ cart: [] }),
-
-      getTotalItems: () => {
-        return get().cart.reduce((acc, item) => acc + item.quantity, 0);
       },
     }),
     {
@@ -131,15 +149,3 @@ export const useCartStore = create<CartState>()(
     }
   )
 );
-
-async function syncWithMongo(userId: string, cart: CartItem[]) {
-  try {
-    await fetch('/api/cart/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, cart }),
-    });
-  } catch (error) {
-    console.error("❌ Error sincronizando:", error);
-  }
-}

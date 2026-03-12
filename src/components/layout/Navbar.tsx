@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { ShoppingCart, LogOut, User, Laptop, Menu, X, ShieldCheck } from 'lucide-react';
+import { ShoppingCart, LogOut, User, Laptop, Menu, X, Search } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
@@ -10,6 +10,9 @@ import { useRouter } from 'next/navigation';
 
 export const Navbar = () => {
   const router = useRouter();
+  
+  // SUSCRIPCIÓN REACTIVA: Al seleccionar 'cart' específicamente, 
+  // la Navbar se re-renderiza sola cuando el array cambia.
   const cart = useCartStore((state) => state.cart);
   const { isLoggedIn, logout, user } = useAuthStore();
   
@@ -21,6 +24,8 @@ export const Navbar = () => {
     setMounted(true);
   }, []);
 
+  // Calculamos el total de items basándonos en la propiedad 'quantity' de cada objeto.
+  // Solo mostramos el número si el usuario ha iniciado sesión.
   const itemCount = (mounted && isLoggedIn) 
     ? cart.reduce((acc, item) => acc + item.quantity, 0) 
     : 0;
@@ -57,17 +62,6 @@ export const Navbar = () => {
           <ul className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <li><Link href="/" className="hover:text-blue-600 transition-colors">Inicio</Link></li>
             <li><Link href="/productos" className="hover:text-blue-600 transition-colors">Productos</Link></li>
-            
-            {/* LINK ADMIN SIEMPRE VISIBLE */}
-            <li>
-              <Link 
-                href="/admin" 
-                className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-all border border-amber-100 font-bold"
-              >
-                <ShieldCheck size={16} />
-                Panel Admin
-              </Link>
-            </li>
           </ul>
 
           {/* ACCIONES */}
@@ -97,20 +91,20 @@ export const Navbar = () => {
               </Link>
             )}
 
-            {/* CARRITO */}
+            {/* CARRITO: El badge se actualiza solo gracias a 'itemCount' */}
             <Link 
               href="/cart" 
               className="relative p-2.5 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all active:scale-95 shadow-md"
             >
               <ShoppingCart size={20} />
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-in zoom-in duration-300">
                   {itemCount}
                 </span>
               )}
             </Link>
 
-            {/* MENÚ MÓVIL */}
+            {/* MENÚ MÓVIL (Hambuerguesa) */}
             <button 
               className="md:hidden p-2 text-slate-600"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -120,22 +114,11 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* MENÚ MÓVIL (Dropdown) */}
+        {/* MENÚ DESPLEGABLE (Móvil) */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white border-b border-gray-100 px-6 py-4 space-y-4 shadow-xl">
             <Link href="/" className="block font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Inicio</Link>
             <Link href="/productos" className="block font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Productos</Link>
-            
-            {/* ADMIN MÓVIL SIEMPRE VISIBLE */}
-            <Link 
-              href="/admin" 
-              className="flex items-center gap-2 font-bold text-amber-600 pt-2 border-t border-slate-100" 
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <ShieldCheck size={18} />
-              Panel Administrador (Demo)
-            </Link>
-
             {!isLoggedIn && (
               <Link href="/login" className="block font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Ingresar</Link>
             )}

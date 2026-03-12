@@ -6,6 +6,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ArrowLeft, ShoppingCart, ShieldCheck, Truck, Star, CheckCircle2, User } from 'lucide-react';
 import Link from 'next/link';
+import { Product } from '@/types'; // Asegúrate de importar tu interfaz
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -17,10 +18,10 @@ export default function ProductoDetalle({ params }: PageProps) {
   const router = useRouter();
   
   const addToCart = useCartStore((state) => state.addToCart);
-  // Extraemos tanto el user como el estado de sesión
   const { user, isLoggedIn } = useAuthStore();
 
-  const [product, setProduct] = useState<any>(null);
+  // Cambiamos any por Product | null para tener autocompletado y seguridad
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState<string>('');
 
@@ -29,22 +30,43 @@ export default function ProductoDetalle({ params }: PageProps) {
       try {
         const res = await fetch(`/api/products/${id}`);
         const data = await res.json();
-        setProduct(data);
+        
+        // NORMALIZACIÓN: Nos aseguramos de que tenga 'id' y '_id' para evitar errores de TS
+        const normalizedProduct = { 
+          ...data, 
+          id: data._id || data.id 
+        };
+
+        setProduct(normalizedProduct);
         setMainImage(data.image);
-      } catch (err) { console.error(err); } finally { setLoading(false); }
+      } catch (err) { 
+        console.error("Error cargando producto:", err); 
+      } finally { 
+        setLoading(false); 
+      }
     };
     fetchProduct();
   }, [id]);
 
   const handleAddToCart = () => {
     if (!product) return;
+    
+    // Obtenemos los IDs de forma segura
     const userId = user?.id || (user as any)?._id;
+    
+    // Llamamos a la función del store (que ya tiene la validación de stock)
     addToCart(product, userId);
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-[#f4f7f9] text-[10px] font-black tracking-[0.3em] text-slate-400">LOADING_PRODUCT</div>;
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center bg-[#f4f7f9] text-[10px] font-black tracking-[0.3em] text-slate-400">
+      LOADING_PRODUCT
+    </div>
+  );
 
-  const allImages = [product.image, product.image2, product.image3].filter(Boolean);
+  if (!product) return <div className="h-screen flex items-center justify-center">Producto no encontrado</div>;
+
+  const allImages = [product.image, (product as any).image2, (product as any).image3].filter(Boolean);
 
   return (
     <div className="min-h-screen bg-[#f4f7f9] pt-32 pb-20 px-6">
@@ -80,7 +102,7 @@ export default function ProductoDetalle({ params }: PageProps) {
                     mainImage === img ? 'border-blue-500 shadow-lg shadow-blue-100' : 'border-transparent opacity-50 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} className="w-full h-full object-contain" />
+                  <img src={img} className="w-full h-full object-contain" alt="thumbnail" />
                 </button>
               ))}
             </div>
@@ -110,14 +132,19 @@ export default function ProductoDetalle({ params }: PageProps) {
             </div>
 
             <div className="space-y-4">
-              {/* LÓGICA PRO: BOTÓN CONDICIONAL */}
               {isLoggedIn ? (
                 <button 
                   onClick={handleAddToCart}
-                  className="w-full bg-[#1e293b] text-white py-5 rounded-2xl font-bold text-sm tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 uppercase flex items-center justify-center gap-3 group"
+                  // Deshabilitar botón si no hay stock
+                  disabled={product.stock < 1}
+                  className={`w-full py-5 rounded-2xl font-bold text-sm tracking-widest transition-all shadow-xl shadow-slate-200 uppercase flex items-center justify-center gap-3 group ${
+                    product.stock < 1 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-[#1e293b] text-white hover:bg-blue-600'
+                  }`}
                 >
                   <ShoppingCart size={18} className="group-hover:-translate-y-1 transition-transform" />
-                  Agregar al carrito
+                  {product.stock < 1 ? 'Sin Stock Disponible' : 'Agregar al carrito'}
                 </button>
               ) : (
                 <Link href="/login" className="block">
@@ -128,7 +155,9 @@ export default function ProductoDetalle({ params }: PageProps) {
                 </Link>
               )}
               
-              <p className="text-[10px] text-slate-400 text-center font-bold uppercase tracking-tighter">Garantía oficial • 12 meses</p>
+              <p className="text-[10px] text-slate-400 text-center font-bold uppercase tracking-tighter">
+                Stock disponible: {product.stock} unidades
+              </p>
             </div>
 
             <div className="mt-12 pt-8 border-t border-slate-200/50 flex flex-col gap-5">
