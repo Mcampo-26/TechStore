@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@source "../../src";
+
+:root {
+  /* Azul estilo corporativo / ML Blue */
+  --ml-blue: #3483fa;
+  --ml-blue-dark: #2968c8;
+  --background: #ebebeb; /* Gris claro de fondo típico de ML */
+  --foreground: #333333;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+.cart-shake {
+  animation: shake-animation 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  animation-iteration-count: 2;
+}
+
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.2s ease-in-out 0s 2;
+}
