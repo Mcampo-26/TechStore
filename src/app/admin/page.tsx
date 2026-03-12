@@ -2,13 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
-import { Trash2, Edit3, Search, Package, Plus, Loader2 } from "lucide-react";
+import { Trash2, Edit3, Search, Package, Plus, Loader2, Zap } from "lucide-react";
 import { EditProductModal } from "@/components/admin/EditProductModal";
-// Importamos tu store de productos
 import { useProductStore } from "@/store/useProductStore"; 
 
 export default function AdminPage() {
-  // Extraemos las funciones y estados de tu ProductState
   const { products, setProducts, isLoading, setLoading, updateProductInList } = useProductStore();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -16,10 +14,12 @@ export default function AdminPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
+  // Estado inicial actualizado con los nuevos campos del modelo
   const initialProductState = {
     name: "", 
     price: 0, 
     stock: 0, 
+    category: "", // Asegúrate de incluir category si es requerida en el modelo
     image: "", 
     image2: "", 
     image3: "",
@@ -33,7 +33,7 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/products");
       const data = await res.json();
-      setProducts(data); // Actualizamos el store global
+      setProducts(data);
     } catch (error) { 
       console.error("Error al obtener productos:", error); 
     } finally { 
@@ -45,9 +45,8 @@ export default function AdminPage() {
     fetchProductos(); 
   }, []);
 
-  // --- LOGICA BOTONES ---
   const handleCreateClick = () => {
-    setSelectedProduct(initialProductState);
+    setSelectedProduct({ ...initialProductState });
     setIsCreating(true);
     setIsEditModalOpen(true);
   };
@@ -74,9 +73,9 @@ export default function AdminPage() {
         const result = await res.json();
         
         if (isCreating) {
-          fetchProductos(); // Recargamos la lista completa si es nuevo
+          fetchProductos(); 
         } else {
-          updateProductInList(result); // Actualizamos solo ese producto en la UI
+          updateProductInList(result); 
         }
 
         Swal.fire("¡Éxito!", isCreating ? "Producto creado" : "Producto actualizado", "success");
@@ -103,7 +102,7 @@ export default function AdminPage() {
       try {
         const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
         if (res.ok) {
-          fetchProductos(); // Refrescamos la lista del store
+          fetchProductos(); 
           Swal.fire("Eliminado", "Producto borrado con éxito", "success");
         }
       } catch (error) {
@@ -120,7 +119,6 @@ export default function AdminPage() {
     <div className="min-h-screen bg-[#ebebeb] pt-24 pb-12 px-4">
       <div className="max-w-6xl mx-auto">
         
-        {/* HEADER CON BOTÓN AGREGAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
             <div className="bg-[#3483fa] p-2 rounded-lg">
@@ -131,7 +129,6 @@ export default function AdminPage() {
             </h1>
           </div>
 
-          {/* AQUÍ ESTÁ EL BOTÓN QUE FALTABA */}
           <button 
             onClick={handleCreateClick}
             className="flex items-center justify-center gap-2 bg-[#3483fa] hover:bg-[#2968c8] text-white font-bold py-3 px-6 rounded-lg transition-all shadow-md shadow-blue-200"
@@ -141,7 +138,6 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* BUSCADOR */}
         <div className="bg-white p-4 rounded-xl shadow-sm mb-6 flex items-center gap-3 border border-gray-200 focus-within:border-[#3483fa] transition-all">
           <Search className="text-gray-400" size={20} />
           <input 
@@ -153,7 +149,6 @@ export default function AdminPage() {
           />
         </div>
 
-        {/* TABLA USANDO EL STORE */}
         <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200">
           <table className="w-full text-left">
             <thead>
@@ -173,13 +168,25 @@ export default function AdminPage() {
                 </tr>
               ) : filteredProducts.map((p: any) => (
                 <tr key={p._id} className="hover:bg-blue-50/40 transition-colors">
-                  <td className="px-6 py-4 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white border border-gray-100 rounded-lg p-1">
-                      <img src={p.image} className="w-full h-full object-contain" alt="" />
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white border border-gray-100 rounded-lg p-1 flex-shrink-0">
+                        <img src={p.image} className="w-full h-full object-contain" alt="" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-gray-700">{p.name}</span>
+                        {/* INDICADOR DE OFERTA EN LA TABLA */}
+                        {p.isOferta && (
+                          <span className="flex items-center gap-1 text-[10px] text-blue-500 font-bold uppercase">
+                            <Zap size={10} fill="currentColor" /> Oferta {p.descuentoPorcentaje}%
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-sm font-semibold text-gray-700">{p.name}</span>
                   </td>
-                  <td className="px-6 py-4 text-sm font-bold text-gray-900">$ {p.price.toLocaleString('es-AR')}</td>
+                  <td className="px-6 py-4 text-sm font-bold text-gray-900">
+                    $ {p.price.toLocaleString('es-AR')}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-center gap-3">
                       <button onClick={() => handleEditClick(p)} className="p-2 text-[#3483fa] hover:bg-blue-50 rounded-full transition-all">

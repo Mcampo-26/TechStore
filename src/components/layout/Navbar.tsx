@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { ShoppingCart, LogOut, User, Laptop, Menu, X, Search } from 'lucide-react';
+import { ShoppingCart, LogOut, User, Laptop, Menu, X, ShieldCheck } from 'lucide-react'; // Añadimos ShieldCheck
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
@@ -11,8 +11,6 @@ import { useRouter } from 'next/navigation';
 export const Navbar = () => {
   const router = useRouter();
   
-  // SUSCRIPCIÓN REACTIVA: Al seleccionar 'cart' específicamente, 
-  // la Navbar se re-renderiza sola cuando el array cambia.
   const cart = useCartStore((state) => state.cart);
   const { isLoggedIn, logout, user } = useAuthStore();
   
@@ -24,8 +22,6 @@ export const Navbar = () => {
     setMounted(true);
   }, []);
 
-  // Calculamos el total de items basándonos en la propiedad 'quantity' de cada objeto.
-  // Solo mostramos el número si el usuario ha iniciado sesión.
   const itemCount = (mounted && isLoggedIn) 
     ? cart.reduce((acc, item) => acc + item.quantity, 0) 
     : 0;
@@ -62,6 +58,19 @@ export const Navbar = () => {
           <ul className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <li><Link href="/" className="hover:text-blue-600 transition-colors">Inicio</Link></li>
             <li><Link href="/productos" className="hover:text-blue-600 transition-colors">Productos</Link></li>
+            
+            {/* LINK ADMIN (Desktop) - Se muestra si está logueado */}
+            {mounted && isLoggedIn && (
+              <li>
+                <Link 
+                  href="/admin" 
+                  className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+                >
+                  <ShieldCheck size={16} />
+                  Panel Admin
+                </Link>
+              </li>
+            )}
           </ul>
 
           {/* ACCIONES */}
@@ -91,7 +100,7 @@ export const Navbar = () => {
               </Link>
             )}
 
-            {/* CARRITO: El badge se actualiza solo gracias a 'itemCount' */}
+            {/* CARRITO */}
             <Link 
               href="/cart" 
               className="relative p-2.5 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all active:scale-95 shadow-md"
@@ -119,6 +128,18 @@ export const Navbar = () => {
           <div className="md:hidden bg-white border-b border-gray-100 px-6 py-4 space-y-4 shadow-xl">
             <Link href="/" className="block font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Inicio</Link>
             <Link href="/productos" className="block font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Productos</Link>
+            
+            {/* ADMIN en móvil */}
+            {isLoggedIn && (
+              <Link 
+                href="/admin" 
+                className="flex items-center gap-2 font-bold text-blue-600 bg-blue-50 p-2 rounded-lg" 
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <ShieldCheck size={18} /> Panel Admin
+              </Link>
+            )}
+
             {!isLoggedIn && (
               <Link href="/login" className="block font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Ingresar</Link>
             )}

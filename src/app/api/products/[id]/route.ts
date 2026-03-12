@@ -2,33 +2,27 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Product from "@/models/Product";
 
-// --- NUEVO: Agregamos el GET para poder ver el detalle del producto ---
+// GET: Obtener un producto por ID
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log(">>> [API] Petición GET recibida");
   try {
     await connectDB();
     const { id } = await params;
-    console.log(">>> [API] Buscando ID:", id);
-
     const product = await Product.findById(id);
 
     if (!product) {
-      console.log(">>> [API] No se encontró el producto en la base de datos");
       return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
     }
 
-    console.log(">>> [API] Producto encontrado exitosamente");
     return NextResponse.json(product);
   } catch (error) {
-    console.error(">>> [API] Error en GET:", error);
+    console.error(">>> [API GET] Error:", error);
     return NextResponse.json({ error: "Error al obtener el producto" }, { status: 500 });
   }
 }
 
-// Tu código de PUT existente
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -38,33 +32,44 @@ export async function PUT(
     const { id } = await params;
     const body = await req.json();
 
-    console.log(">>> [API] Intentando actualizar ID:", id);
-    console.log(">>> [API] Datos recibidos para actualizar:", body);
+    console.log("📥 [API PUT] Datos brutos recibidos:", body);
 
-    // Usamos findByIdAndUpdate con returnDocument: 'after' para evitar el warning
+    // Ahora que el Modelo y el Front coinciden, pasamos el body directamente.
+    // Usamos $set para actualizar solo los campos que vienen en el body.
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
-      { $set: body }, // Usamos $set para asegurar que sobrescriba los campos
+      { $set: body },
       { 
-        new: true, 
-        returnDocument: 'after', 
-        runValidators: true // Esto asegura que respete tu modelo
+        new: true,           // Devuelve el documento actualizado
+        runValidators: true, // Valida que los datos sigan las reglas del esquema
+        strict: false        // Permite procesar los campos aunque el modelo esté en caché
       }
     );
 
     if (!updatedProduct) {
-      console.error(">>> [API] No se encontró el producto para actualizar");
+      console.log("❌ [API PUT] No se encontró el producto ID:", id);
       return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
     }
 
-    console.log(">>> [API] Producto actualizado con éxito en DB");
+    // Log final para verificar que los nombres coinciden
+    console.log("💾 [API PUT] Grabado con éxito:", {
+      name: updatedProduct.name,
+      isOferta: updatedProduct.isOferta,
+      descuento: updatedProduct.descuento
+    });
+
     return NextResponse.json(updatedProduct);
-  } catch (error) {
-    console.error(">>> [API] Error al actualizar:", error);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  } catch (error: any) {
+    console.error("💥 [API PUT] Error crítico:", error.message);
+    return NextResponse.json(
+      { error: "Error al actualizar: " + error.message }, 
+      { status: 500 }
+    );
   }
 }
-// Tu código de DELETE existente
+
+
+// DELETE: Eliminar un producto
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
