@@ -83,17 +83,36 @@ export default function AdminPage() {
       cancelButtonColor: "#ff4747",
       confirmButtonText: "Sí, eliminar"
     });
-
+  
     if (result.isConfirmed) {
-      try {
-        const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
-        if (res.ok) {
-          fetchProductos(); 
-          Swal.fire("Eliminado", "Producto borrado", "success");
-        }
-      } catch (error) {
-        Swal.fire("Error", "No se pudo eliminar", "error");
-      }
+      // Simulamos la carga
+      Swal.fire({
+        title: "Procesando...",
+        didOpen: () => { Swal.showLoading(); }
+      });
+  
+      setTimeout(() => {
+        // Filtramos localmente para que "desaparezca"
+        const updatedProducts = products.filter((p: any) => p._id !== id);
+        setProducts(updatedProducts);
+  
+        // Cartel final con la explicación
+        Swal.fire({
+          title: "Borrado Simulado",
+          html: `
+            <div style="text-align: center;">
+              <p>El producto <b>${name}</b> se quitó de la vista actual.</p>
+              <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+              <p style="font-size: 0.85rem; color: #666;">
+                Nota: Para proteger la integridad del portfolio, <b>los cambios reales están deshabilitados</b>. 
+                Al recargar la página, el producto volverá a aparecer.
+              </p>
+            </div>
+          `,
+          icon: "info",
+          confirmButtonColor: "#3483fa",
+        });
+      }, 800);
     }
   };
 
