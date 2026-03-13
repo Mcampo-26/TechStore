@@ -1,4 +1,7 @@
 import { ArrowRight, Zap } from 'lucide-react';
+import Link from 'next/link';
+
+
 
 export const PromoBanner = () => {
   return (
@@ -47,11 +50,13 @@ export const PromoBanner = () => {
             </div>
             
             {/* Botón más compacto y responsivo: full width en mobile, auto en desktop */}
-            <button className="group relative flex items-center justify-center gap-3 bg-white text-black w-full md:w-auto px-6 md:px-10 py-3.5 md:py-5 rounded-full font-bold text-sm md:text-lg hover:bg-blue-500 hover:text-white transition-all duration-300 shadow-xl">
-              Explorar Catálogo
-              {/* Icono más pequeño para mobile */}
-              <ArrowRight className="group-hover:translate-x-1 transition-transform w-4 h-4 md:w-6 md:h-6" />
-            </button>
+            <Link href="/productos">
+  <button className="group relative flex items-center justify-center gap-3 bg-white text-black w-full md:w-auto px-6 md:px-10 py-3.5 md:py-5 rounded-full font-bold text-sm md:text-lg hover:bg-blue-500 hover:text-white transition-all duration-300 shadow-xl">
+    Explorar Catálogo
+    {/* Icono más pequeño para mobile */}
+    <ArrowRight className="group-hover:translate-x-1 transition-transform w-4 h-4 md:w-6 md:h-6" />
+  </button>
+</Link>
           </div>
 
         </div>

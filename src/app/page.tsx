@@ -6,6 +6,16 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Product } from '@/types';
 import { BrandBanner } from '@/components/Home/BrandBanner';
 import { PromoBanner } from '@/components/Home/PromoBanner';
+import { 
+  Truck, 
+  ShieldCheck, 
+  CreditCard, 
+  Clock 
+} from 'lucide-react';
+
+
+
+
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -57,6 +67,24 @@ export default function Home() {
           <h2 className="text-3xl font-black text-slate-900 tracking-tighter border-l-8 border-blue-600 pl-4">
             ÚLTIMAS <span className="text-blue-600">VISITAS</span>
           </h2>
+          <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
+  {[
+    { icon: <Truck />, title: "Envío Gratis", desc: "En compras mayores a $50.000" },
+    { icon: <ShieldCheck />, title: "Compra Segura", desc: "Garantía oficial en todo" },
+    { icon: <CreditCard />, title: "12 Cuotas Sin Interés", desc: "Con todos los bancos" },
+    { icon: <Clock />, title: "Soporte 24/7", desc: "Expertos a tu disposición" },
+  ].map((item, i) => (
+    <div key={i} className="flex items-center gap-4 group">
+      <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+        {item.icon}
+      </div>
+      <div>
+        <h4 className="font-bold text-sm text-slate-800">{item.title}</h4>
+        <p className="text-xs text-slate-400">{item.desc}</p>
+      </div>
+    </div>
+  ))}
+</div>
 
           {/* Buscador integrado opcional aquí si quieres usar searchTerm */}
           <div className="relative w-full md:w-80">
