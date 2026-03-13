@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { X, Save, Plus, Image as ImageIcon, Tag, Zap, Percent, Edit3 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Save, Plus, Image as ImageIcon, Tag, Zap, Percent, Edit3, PlusCircle } from 'lucide-react';
+import { useCategoryStore } from '@/store/useCategoryStore';
 
 interface EditProductModalProps {
   isOpen: boolean;
@@ -14,12 +15,21 @@ interface EditProductModalProps {
 
 export const EditProductModal = ({ isOpen, onClose, product, setProduct, onUpdate, isCreating = false }: EditProductModalProps) => {
   
+  // Hooks del Store de Categorías
+  const { categories, fetchCategories, addCategory } = useCategoryStore();
+  
+  // Estados para nueva categoría "al vuelo"
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+
   // LOG: Monitorear cuando el producto cambia o el modal se abre
   useEffect(() => {
     if (isOpen) {
       console.log("📂 [MODAL] Abierto con producto:", product);
+      fetchCategories(); // Aseguramos tener las categorías actualizadas
+      setIsAddingNew(false);
     }
-  }, [isOpen, product]);
+  }, [isOpen, product, fetchCategories]);
 
   if (!isOpen || !product) return null;
 
@@ -27,6 +37,26 @@ export const EditProductModal = ({ isOpen, onClose, product, setProduct, onUpdat
   const handleFieldChange = (field: string, value: any) => {
     console.log(`✍️ [MODAL] Editando campo: ${field} ->`, value);
     setProduct({ ...product, [field]: value });
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === "NEW_CATEGORY") {
+      setIsAddingNew(true);
+    } else {
+      handleFieldChange('category', value);
+    }
+  };
+
+  const handleAddNewCategory = async () => {
+    if (!newCatName.trim()) return;
+    
+    const savedCategory = await addCategory(newCatName);
+    if (savedCategory) {
+      handleFieldChange('category', savedCategory.name);
+      setIsAddingNew(false);
+      setNewCatName("");
+    }
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -104,24 +134,53 @@ export const EditProductModal = ({ isOpen, onClose, product, setProduct, onUpdat
               />
             </div>
 
-            {/* CATEGORÍA */}
+            {/* CATEGORÍA DINÁMICA */}
             <div>
               <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider flex items-center gap-1">
                 <Tag size={10} /> Categoría
               </label>
-              <select 
-                className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-[#3483fa] outline-none"
-                value={product.category || ''}
-                onChange={(e) => handleFieldChange('category', e.target.value)}
-                required
-              >
-                <option value="">Selecciona una categoría...</option>
-                <option value="Notebooks">Notebooks</option>
-                <option value="Celulares">Celulares</option>
-                <option value="Componentes">Componentes</option>
-                <option value="Periféricos">Periféricos</option>
-                <option value="Monitores">Monitores</option>
-              </select>
+              
+              {!isAddingNew ? (
+                <select 
+                  className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-[#3483fa] outline-none bg-white"
+                  value={product.category || ''}
+                  onChange={handleCategoryChange}
+                  required
+                >
+                  <option value="">Selecciona una categoría...</option>
+                  {categories.map((cat: any) => (
+                    <option key={cat._id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                  <option value="NEW_CATEGORY" className="text-blue-600 font-bold">+ Crear Nueva Categoría</option>
+                </select>
+              ) : (
+                <div className="flex gap-2 animate-in slide-in-from-left-2">
+                  <input 
+                    type="text" 
+                    className="flex-1 border border-blue-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder="Nombre de la nueva categoría..."
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    autoFocus
+                  />
+                  <button 
+                    type="button"
+                    onClick={handleAddNewCategory}
+                    className="bg-blue-600 text-white px-4 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors"
+                  >
+                    Añadir
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setIsAddingNew(false)}
+                    className="bg-gray-100 text-gray-500 px-3 rounded-xl hover:bg-gray-200 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* PRECIO Y STOCK */}
@@ -188,10 +247,10 @@ export const EditProductModal = ({ isOpen, onClose, product, setProduct, onUpdat
 
           {/* BOTONES */}
           <div className="flex gap-3 pt-4 border-t sticky bottom-0 bg-white pb-2">
-            <button type="button" onClick={onClose} className="flex-1 py-3 border border-gray-200 rounded-xl font-bold text-gray-500">
+            <button type="button" onClick={onClose} className="flex-1 py-3 border border-gray-200 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-colors">
               Cancelar
             </button>
-            <button type="submit" className="flex-1 py-3 bg-[#3483fa] text-white rounded-xl font-bold shadow-lg shadow-blue-100">
+            <button type="submit" className="flex-1 py-3 bg-[#3483fa] text-white rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-[#2a6fd6] transition-colors">
               {isCreating ? 'Crear Producto' : 'Guardar Cambios'}
             </button>
           </div>
