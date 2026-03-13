@@ -14,18 +14,10 @@ export default function AdminPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
-  // Estado inicial actualizado con los nuevos campos del modelo
   const initialProductState = {
-    name: "", 
-    price: 0, 
-    stock: 0, 
-    category: "", // Asegúrate de incluir category si es requerida en el modelo
-    image: "", 
-    image2: "", 
-    image3: "",
-    description: "",
-    isOferta: false, 
-    descuentoPorcentaje: 0
+    name: "", price: 0, stock: 0, category: "", 
+    image: "", image2: "", image3: "",
+    description: "", isOferta: false, descuentoPorcentaje: 0
   };
 
   const fetchProductos = async () => {
@@ -41,9 +33,7 @@ export default function AdminPage() {
     }
   };
 
-  useEffect(() => { 
-    fetchProductos(); 
-  }, []);
+  useEffect(() => { fetchProductos(); }, []);
 
   const handleCreateClick = () => {
     setSelectedProduct({ ...initialProductState });
@@ -71,17 +61,12 @@ export default function AdminPage() {
 
       if (res.ok) {
         const result = await res.json();
-        
-        if (isCreating) {
-          fetchProductos(); 
-        } else {
-          updateProductInList(result); 
-        }
-
+        if (isCreating) { fetchProductos(); } 
+        else { updateProductInList(result); }
         Swal.fire("¡Éxito!", isCreating ? "Producto creado" : "Producto actualizado", "success");
         setIsEditModalOpen(false);
       } else {
-        Swal.fire("Error", "No se pudo guardar los cambios", "error");
+        Swal.fire("Error", "No se pudo guardar", "error");
       }
     } catch (error) {
       Swal.fire("Error", "Error de conexión", "error");
@@ -91,6 +76,7 @@ export default function AdminPage() {
   const handleDelete = async (id: string, name: string) => {
     const result = await Swal.fire({
       title: `¿Eliminar "${name}"?`,
+      text: "Esta acción no se puede deshacer",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3483fa",
@@ -103,7 +89,7 @@ export default function AdminPage() {
         const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
         if (res.ok) {
           fetchProductos(); 
-          Swal.fire("Eliminado", "Producto borrado con éxito", "success");
+          Swal.fire("Eliminado", "Producto borrado", "success");
         }
       } catch (error) {
         Swal.fire("Error", "No se pudo eliminar", "error");
@@ -116,101 +102,119 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#ebebeb] pt-24 pb-12 px-4">
+    <div className="min-h-screen bg-[#f5f5f5] pt-20 pb-12 px-4 md:px-8">
       <div className="max-w-6xl mx-auto">
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        {/* HEADER RESPONSIVE */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-3">
-            <div className="bg-[#3483fa] p-2 rounded-lg">
+            <div className="bg-[#3483fa] p-2.5 rounded-2xl shadow-lg shadow-blue-100">
               <Package className="text-white" size={24} />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
-              Panel <span className="text-[#3483fa]">Admin</span>
-            </h1>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Inventario</h1>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Panel de Control</p>
+            </div>
           </div>
 
           <button 
             onClick={handleCreateClick}
-            className="flex items-center justify-center gap-2 bg-[#3483fa] hover:bg-[#2968c8] text-white font-bold py-3 px-6 rounded-lg transition-all shadow-md shadow-blue-200"
+            className="flex items-center justify-center gap-2 bg-[#3483fa] hover:bg-[#2968c8] text-white font-black text-sm uppercase tracking-wider py-4 px-6 rounded-2xl transition-all shadow-xl shadow-blue-200 active:scale-95"
           >
             <Plus size={20} />
             Nuevo Producto
           </button>
         </div>
 
-        <div className="bg-white p-4 rounded-xl shadow-sm mb-6 flex items-center gap-3 border border-gray-200 focus-within:border-[#3483fa] transition-all">
-          <Search className="text-gray-400" size={20} />
+        {/* BUSCADOR */}
+        <div className="bg-white p-2 rounded-2xl shadow-sm mb-8 flex items-center gap-3 border border-gray-100 focus-within:ring-2 focus-within:ring-[#3483fa]/20 transition-all">
+          <div className="pl-4 text-gray-400"><Search size={20} /></div>
           <input 
             type="text" 
             placeholder="Buscar por nombre..."
-            className="w-full outline-none text-gray-600 bg-transparent"
+            className="w-full py-3 outline-none text-gray-600 bg-transparent font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                <th className="px-6 py-4">Producto</th>
-                <th className="px-6 py-4">Precio</th>
-                <th className="px-6 py-4 text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={3} className="py-20 text-center text-gray-400">
-                    <Loader2 className="animate-spin mx-auto mb-2" />
-                    Cargando inventario...
-                  </td>
+        {/* CONTENEDOR DE TABLA / CARDS */}
+        <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 overflow-hidden border border-gray-100">
+          
+          {/* VISTA ESCRITORIO (TABLA) - Se oculta en móviles */}
+          <div className="hidden md:block">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50/50 border-b border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                  <th className="px-8 py-5">Producto</th>
+                  <th className="px-8 py-5">Precio</th>
+                  <th className="px-8 py-5 text-right">Acciones</th>
                 </tr>
-              ) : filteredProducts.map((p: any) => (
-                <tr key={p._id} className="hover:bg-blue-50/40 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white border border-gray-100 rounded-lg p-1 flex-shrink-0">
-                        <img src={p.image} className="w-full h-full object-contain" alt="" />
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {isLoading ? (
+                  <tr><td colSpan={3} className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-blue-500" /></td></tr>
+                ) : filteredProducts.map((p: any) => (
+                  <tr key={p._id} className="hover:bg-blue-50/30 transition-colors group">
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-gray-50 rounded-xl p-2 flex-shrink-0 group-hover:scale-110 transition-transform">
+                          <img src={p.image} className="w-full h-full object-contain" alt="" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-gray-800">{p.name}</span>
+                          {p.isOferta && (
+                            <span className="flex items-center gap-1 text-[9px] text-blue-600 font-black uppercase tracking-tighter">
+                              <Zap size={10} fill="currentColor" /> {p.descuentoPorcentaje}% OFF
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-gray-700">{p.name}</span>
-                        {/* INDICADOR DE OFERTA EN LA TABLA */}
-                        {p.isOferta && (
-                          <span className="flex items-center gap-1 text-[10px] text-blue-500 font-bold uppercase">
-                            <Zap size={10} fill="currentColor" /> Oferta {p.descuentoPorcentaje}%
-                          </span>
-                        )}
+                    </td>
+                    <td className="px-8 py-5 font-black text-gray-900">$ {p.price.toLocaleString('es-AR')}</td>
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleEditClick(p)} className="p-2.5 text-[#3483fa] hover:bg-blue-50 rounded-xl transition-all"><Edit3 size={18} /></button>
+                        <button onClick={() => handleDelete(p._id, p.name)} className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-bold text-gray-900">
-                    $ {p.price.toLocaleString('es-AR')}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex justify-center gap-3">
-                      <button onClick={() => handleEditClick(p)} className="p-2 text-[#3483fa] hover:bg-blue-50 rounded-full transition-all">
-                        <Edit3 size={20} />
-                      </button>
-                      <button onClick={() => handleDelete(p._id, p.name)} className="p-2 text-red-400 hover:bg-red-50 rounded-full transition-all">
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* VISTA MÓVIL (CARDS) - Se oculta en escritorio */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {isLoading ? (
+               <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-blue-500" /></div>
+            ) : filteredProducts.map((p: any) => (
+              <div key={p._id} className="p-5 flex items-center justify-between gap-4 active:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-16 h-16 bg-gray-50 rounded-2xl p-2 flex-shrink-0">
+                    <img src={p.image} className="w-full h-full object-contain" alt="" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-gray-900 truncate">{p.name}</h3>
+                    <p className="text-blue-600 font-black text-sm">$ {p.price.toLocaleString('es-AR')}</p>
+                    {p.isOferta && <span className="text-[9px] font-black text-white bg-blue-500 px-1.5 py-0.5 rounded-md uppercase italic">Oferta</span>}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => handleEditClick(p)} className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Edit3 size={18} /></button>
+                  <button onClick={() => handleDelete(p._id, p.name)} className="p-3 bg-red-50 text-red-500 rounded-2xl"><Trash2 size={18} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+
         </div>
       </div>
 
       <EditProductModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
-        product={selectedProduct} 
-        setProduct={setSelectedProduct} 
-        onUpdate={handleSubmit} 
-        isCreating={isCreating} 
+        isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} 
+        product={selectedProduct} setProduct={setSelectedProduct} 
+        onUpdate={handleSubmit} isCreating={isCreating} 
       />
     </div>
   );
