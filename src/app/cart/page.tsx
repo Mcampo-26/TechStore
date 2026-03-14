@@ -9,22 +9,13 @@ import { useProductStore } from "@/store/useProductStore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-// Componente para cada fila del carrito
+// --- COMPONENTE: FILA DE PRODUCTO ---
 const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   const [showError, setShowError] = useState(false);
 
   const price = Number(item.price) || 0;
   const quantity = Number(item.quantity) || 0;
   const stock = Number(item.stock) || 0;
-  const [isMounted, setIsMounted] = useState(false); // <--- Esto estaba bien
-  const [isLoading, setIsLoading] = useState(false);
-
-
-  
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
 
   const handleIncrease = () => {
     if (quantity >= stock) {
@@ -39,7 +30,6 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
     <div className="p-4 rounded-xl shadow-sm flex items-center gap-4 border transition-all duration-300"
          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
       
-      {/* Contenedor de imagen con fondo blanco siempre para que el producto luzca bien */}
       <div className="bg-white p-2 rounded-lg w-24 h-24 flex items-center justify-center">
         <img src={item.image} alt={item.name} className="max-h-full object-contain" />
       </div>
@@ -96,19 +86,27 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   );
 };
 
+// --- COMPONENTE PRINCIPAL: PÁGINA DE CARRITO ---
 export default function CarritoPage() {
   const { cart, removeFromCart, updateQuantity, revalidateCartStock } = useCartStore();
   const { user } = useAuthStore();
   const { products } = useProductStore();
+  
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // 1. Efecto para manejar la hidratación
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // 2. Efecto para revalidar stock cuando cargan los productos
   useEffect(() => {
     if (isMounted && products.length > 0) {
-      revalidateCartStock(products); // <--- Asegúrate de pasar 'products' aquí
+      revalidateCartStock(products);
     }
-  }, [isMounted, user, products, revalidateCartStock]);
+  }, [isMounted, products, revalidateCartStock]);
 
   const subtotal = cart.reduce((acc, item) => {
     const p = Number(item.price) || 0;
@@ -123,8 +121,10 @@ export default function CarritoPage() {
     }, 1500);
   };
 
+  // Prevenir errores de hidratación (no renderiza nada en el servidor)
   if (!isMounted) return null;
 
+  // Pantalla de carrito vacío
   if (cart.length === 0) {
     return (
       <div className="min-h-screen pt-32 flex flex-col items-center transition-colors duration-300"
