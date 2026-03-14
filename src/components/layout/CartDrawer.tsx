@@ -3,26 +3,46 @@
 import React, { useEffect, useState } from "react";
 import { 
   X, ShoppingBag, Trash2, Truck, CreditCard, 
-  ArrowRight, ShieldCheck, RotateCcw, CheckCircle2, ChevronLeft 
+  ShieldCheck, RotateCcw, CheckCircle2, ChevronLeft 
 } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore"; 
+import { useRouter } from "next/navigation";
 
 export const CartDrawer = () => {
+  // 1. TODOS los Hooks primero
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const cart = useCartStore((state) => state.cart);
   const isDrawerOpen = useCartStore((state) => state.isDrawerOpen);
   const closeDrawer = useCartStore((state) => state.closeDrawer);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { 
+    setMounted(true); 
+  }, []);
 
-  if (!mounted) return null;
-
+  // 2. Cálculos de variables
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+    setIsLoading(true);
+    
+    setTimeout(() => {
+      closeDrawer(); // Cerramos el drawer antes de irnos
+      router.push("/checkout");
+      setIsLoading(false);
+    }, 1500);
+  };
+
+  // 3. RETORNO CONDICIONAL (Solo después de declarar todos los hooks)
+  if (!mounted) return null;
 
   return (
     <>
-      {/* Overlay - Se oculta si el drawer está cerrado */}
+      {/* Overlay */}
       <div 
         className={`fixed inset-0 z-[9998] bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${
           isDrawerOpen ? "opacity-100 visible" : "opacity-0 invisible"
@@ -48,7 +68,7 @@ export const CartDrawer = () => {
           </button>
         </div>
 
-        {/* Contenido Scrolleable */}
+        {/* Contenido */}
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center opacity-20">
@@ -57,7 +77,7 @@ export const CartDrawer = () => {
             </div>
           ) : (
             <>
-              {/* Cards de Productos */}
+              {/* Lista de productos */}
               <div className="space-y-4">
                 {cart.map((item) => (
                   <div key={item.id} className="flex gap-4 p-5 rounded-[2rem] border transition-all shadow-sm min-h-[150px]"
@@ -73,7 +93,7 @@ export const CartDrawer = () => {
                           {item.name}
                       </h3>
                       <p className="text-[12px] leading-relaxed font-medium mb-4" 
-                         style={{ color: 'var(--foreground)', opacity: 1 }}>
+                         style={{ color: 'var(--foreground)', opacity: 0.7 }}>
                         {item.description}
                       </p>
 
@@ -93,52 +113,44 @@ export const CartDrawer = () => {
                 ))}
               </div>
 
-              {/* Información de Envío y Pago Sólida */}
-              <div className="space-y-3 px-2">
-                <div className="flex items-center gap-4 p-4 rounded-3xl border" style={{ backgroundColor: 'var(--nav-bg)', borderColor: 'var(--border-theme)' }}>
+              {/* Beneficios */}
+              <div className="space-y-3 px-2 text-[10px] font-black uppercase tracking-wider">
+                <div className="flex items-center gap-4 p-4 rounded-3xl border" style={{ backgroundColor: 'var(--nav-bg)', borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}>
                   <Truck size={20} className="text-blue-600" />
-                  <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--foreground)' }}>Envío Gratis Incluido</p>
+                  <span>Envío Gratis Incluido</span>
                 </div>
-                <div className="flex items-center gap-4 p-4 rounded-3xl border" style={{ backgroundColor: 'var(--nav-bg)', borderColor: 'var(--border-theme)' }}>
+                <div className="flex items-center gap-4 p-4 rounded-3xl border" style={{ backgroundColor: 'var(--nav-bg)', borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}>
                   <CreditCard size={20} className="text-purple-600" />
-                  <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--foreground)' }}>Hasta 6 Cuotas sin interés</p>
-                </div>
-              </div>
-
-              {/* Bloques de Garantía */}
-              <div className="rounded-[2.5rem] p-6 border flex justify-between gap-2 shadow-sm"
-                   style={{ backgroundColor: 'var(--nav-bg)', borderColor: 'var(--border-theme)' }}>
-                <div className="flex flex-col items-center text-center gap-2 flex-1">
-                    <ShieldCheck size={22} className="text-blue-500" />
-                    <span className="text-[9px] font-black uppercase leading-none" style={{ color: 'var(--foreground)' }}>Compra<br/>Protegida</span>
-                </div>
-                <div className="flex flex-col items-center text-center gap-2 flex-1 border-x" style={{ borderColor: 'var(--border-theme)' }}>
-                    <RotateCcw size={22} className="text-blue-500" />
-                    <span className="text-[9px] font-black uppercase leading-none" style={{ color: 'var(--foreground)' }}>30 días de<br/>devolución</span>
-                </div>
-                <div className="flex flex-col items-center text-center gap-2 flex-1">
-                    <CheckCircle2 size={22} className="text-blue-500" />
-                    <span className="text-[9px] font-black uppercase leading-none" style={{ color: 'var(--foreground)' }}>Garantía de<br/>fábrica</span>
+                  <span>Hasta 6 Cuotas sin interés</span>
                 </div>
               </div>
             </>
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer con el botón pedido */}
         <div className="p-8 border-t space-y-4" style={{ borderColor: 'var(--border-theme)', backgroundColor: 'var(--card-bg)' }}>
           <div className="flex justify-between items-end mb-4">
              <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-40" style={{ color: 'var(--foreground)' }}>Total a pagar</p>
                 <p className="text-3xl font-black tracking-tighter text-blue-600">$ {total.toLocaleString('es-AR')}</p>
              </div>
-             <ShoppingBag size={30} className="opacity-10" style={{ color: 'var(--foreground)' }} />
           </div>
           
           <div className="flex flex-col gap-3">
-            <button className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-[0.25em] rounded-[1.5rem] shadow-2xl shadow-blue-600/30 flex items-center justify-center gap-3 transition-all active:scale-95 group">
-              Iniciar Compra Segura 
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            <button 
+              onClick={handleCheckout}
+              disabled={isLoading || cart.length === 0}
+              className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 active:scale-95"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Procesando...</span>
+                </div>
+              ) : (
+                "Continuar compra"
+              )}
             </button>
 
             <button 
