@@ -81,24 +81,40 @@ export const Navbar = () => {
 
           {/* NAVEGACIÓN DESKTOP */}
           <ul className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest">
-            <li><Link href="/" className="hover:text-blue-600 transition-colors" style={{ color: 'var(--foreground)' }}>Inicio</Link></li>
+            <li>
+              <Link href="/" className="hover:text-blue-600 transition-colors" style={{ color: 'var(--foreground)' }}>
+                Inicio
+              </Link>
+            </li>
             <li className="relative group">
               <button className="flex items-center gap-1 hover:text-blue-600 transition-colors py-4 uppercase" style={{ color: 'var(--foreground)' }}>
                 Productos <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
               </button>
+              
+              {/* DROPDOWN MENU - CORRECCIÓN DE CONTRASTE ELEGANTE */}
               <div 
-                className="absolute top-full left-0 w-48 shadow-2xl border rounded-2xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0"
+                className="absolute top-full left-0 w-64 shadow-2xl border rounded-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0"
                 style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}
               >
-                <Link href="/productos" className="block px-4 py-2 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-black mb-1 transition-colors">
-                  VER TODO EL CATÁLOGO
+                <Link href="/productos" className="block px-4 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black mb-3 transition-all hover:bg-blue-700 text-center uppercase tracking-tighter shadow-md">
+                  Ver todo el catálogo
                 </Link>
-                <div className="h-px w-full my-1 opacity-10" style={{ backgroundColor: 'var(--foreground)' }} />
-                {categories.map((cat: any) => (
-                  <Link key={cat._id} href={`/productos?categoria=${cat.name}`} className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[10px] transition-colors" style={{ color: 'var(--foreground)' }}>
-                    {cat.name}
-                  </Link>
-                ))}
+                
+                <div className="h-px w-full my-2 opacity-10" style={{ backgroundColor: 'var(--foreground)' }} />
+                
+                <div className="max-h-64 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 p-1">
+                  {categories.map((cat: any) => (
+                    <Link 
+                      key={cat._id} 
+                      href={`/productos?categoria=${cat.name}`} 
+                      className="block px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-tight transition-all border border-transparent 
+                                 hover:border-blue-600/30 hover:bg-blue-600/10 hover:text-blue-600 dark:hover:text-blue-500" 
+                      style={{ color: 'var(--foreground)' }}
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
+                </div>
               </div>
             </li>
 
@@ -151,7 +167,6 @@ export const Navbar = () => {
               )}
             </Link>
 
-            {/* BOTÓN HAMBURGUESA */}
             <button 
               className="md:hidden p-2.5 rounded-xl border transition-all active:scale-95" 
               style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
@@ -163,41 +178,41 @@ export const Navbar = () => {
         </div>
       </nav>
       
-      {/* MENÚ MÓVIL (DESPLEGABLE) */}
-      <div className={`md:hidden fixed inset-0 z-40 transition-all duration-300 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-        {/* Overlay oscuro */}
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
+      {/* MENÚ MÓVIL */}
+      <div className={`md:hidden fixed inset-0 z-[60] transition-all duration-300 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
         
-        {/* Contenido del menú */}
         <div 
-          className={`absolute right-0 top-0 h-full w-[280px] shadow-2xl transition-transform duration-300 p-6 flex flex-col gap-6 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`absolute right-0 top-0 h-full w-[300px] shadow-2xl transition-transform duration-500 p-8 flex flex-col gap-6 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
           style={{ backgroundColor: 'var(--card-bg)' }}
         >
-          <div className="flex items-center justify-between mt-4">
-            <span className="font-black text-xs uppercase tracking-widest" style={{ color: 'var(--foreground)' }}>Menú</span>
-            <button onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--foreground)' }}>
+          <div className="flex items-center justify-between mt-2">
+            <span className="font-black text-xs uppercase tracking-[0.3em] opacity-40" style={{ color: 'var(--foreground)' }}>Navegación</span>
+            <button onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--foreground)' }} className="p-2 hover:bg-blue-600/10 rounded-full">
               <X size={24} />
             </button>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-bold p-3 rounded-xl hover:bg-blue-600/10 transition-colors" style={{ color: 'var(--foreground)' }}>
+          <div className="flex flex-col gap-2 p-1">
+            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-black p-4 rounded-2xl hover:bg-blue-600/10 transition-all uppercase tracking-tighter" style={{ color: 'var(--foreground)' }}>
               Inicio
             </Link>
-            <Link href="/productos" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-bold p-3 rounded-xl hover:bg-blue-600/10 transition-colors" style={{ color: 'var(--foreground)' }}>
-              Todos los Productos
+            <Link href="/productos" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-black p-4 rounded-2xl hover:bg-blue-600/10 transition-all uppercase tracking-tighter" style={{ color: 'var(--foreground)' }}>
+              Productos
             </Link>
             
-            <div className="h-px w-full opacity-10 my-2" style={{ backgroundColor: 'var(--foreground)' }} />
+            <div className="h-px w-full opacity-5 my-4" style={{ backgroundColor: 'var(--foreground)' }} />
             
-            <span className="text-[10px] font-black uppercase opacity-50 px-3" style={{ color: 'var(--foreground)' }}>Categorías</span>
-            <div className="grid grid-cols-1 gap-1">
+            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 px-4 mb-2" style={{ color: 'var(--foreground)' }}>Categorías</span>
+            
+            <div className="flex flex-col gap-1.5 max-h-[40vh] overflow-y-auto px-2">
               {categories.map((cat: any) => (
                 <Link 
                   key={cat._id} 
                   href={`/productos?categoria=${cat.name}`} 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-3 py-2 text-sm font-medium hover:text-blue-600 transition-colors"
+                  className="px-4 py-3 text-sm font-black rounded-xl uppercase transition-all border border-transparent 
+                             hover:border-blue-600/30 hover:bg-blue-600/10 hover:text-blue-600 dark:hover:text-blue-500"
                   style={{ color: 'var(--foreground)' }}
                 >
                   {cat.name}
@@ -209,7 +224,7 @@ export const Navbar = () => {
               <Link 
                 href="/admin" 
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="mt-4 flex items-center gap-2 p-3 bg-blue-600 text-white rounded-xl font-bold justify-center"
+                className="mt-6 flex items-center gap-3 p-4 bg-blue-600 text-white rounded-2xl font-black justify-center shadow-lg shadow-blue-500/30 uppercase text-xs tracking-widest"
               >
                 <ShieldCheck size={20} />
                 Panel Admin

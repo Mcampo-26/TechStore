@@ -79,24 +79,7 @@ export const Footer = () => {
           <div className="col-span-1 md:col-span-1">
             <h4 className="font-bold mb-6 uppercase text-xs tracking-widest opacity-90">Suscríbete</h4>
             <p className="text-sm mb-4 opacity-70">Recibe las últimas novedades tech y descuentos exclusivos.</p>
-            <form className="relative group" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="email"
-                placeholder="tu@email.com"
-                className="w-full rounded-xl py-3 px-4 text-sm transition-all border outline-none focus:ring-2 focus:ring-blue-600/30"
-                style={{ 
-                  backgroundColor: 'var(--background)', 
-                  borderColor: 'var(--border-theme)',
-                  color: 'var(--foreground)'
-                }}
-              />
-              <button 
-                type="submit"
-                className="absolute right-2 top-1.5 p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
-              >
-                <ArrowRight size={18} />
-              </button>
-            </form>
+            
           </div>
 
         </div>
