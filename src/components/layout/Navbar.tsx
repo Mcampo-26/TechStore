@@ -43,7 +43,6 @@ export const Navbar = () => {
     }
   };
 
-  // Cálculo de items del carrito
   const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
   const handleLogout = async () => {
@@ -107,8 +106,7 @@ export const Navbar = () => {
               <li>
                 <Link 
                   href="/admin" 
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[10px] font-black uppercase tracking-tighter
-                             bg-blue-600/10 text-blue-600 border-blue-600/20 hover:bg-blue-600 hover:text-white"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[10px] font-black uppercase tracking-tighter bg-blue-600/10 text-blue-600 border-blue-600/20 hover:bg-blue-600 hover:text-white"
                 >
                   <ShieldCheck size={14} />
                   Panel Admin
@@ -119,8 +117,6 @@ export const Navbar = () => {
 
           {/* ACCIONES */}
           <div className="flex items-center gap-2 sm:gap-3">
-            
-            {/* TOGGLE DARK MODE */}
             <button 
               onClick={toggleTheme}
               className="p-2.5 rounded-xl transition-all border hover:border-blue-600 hover:text-blue-600"
@@ -129,7 +125,6 @@ export const Navbar = () => {
               {mounted && (isDarkMode ? <Sun size={18} /> : <Moon size={18} />)}
             </button>
 
-            {/* LOGIN / LOGOUT */}
             {mounted && isLoggedIn ? (
               <button onClick={handleLogout} className="p-2.5 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border border-transparent hover:border-red-600">
                 <LogOut size={18} />
@@ -142,24 +137,23 @@ export const Navbar = () => {
               </Link>
             )}
 
-            {/* BOTÓN CARRITO REINCORPORADO */}
             <Link 
-  href="/cart" 
-  className="relative p-2.5 flex items-center justify-center rounded-xl transition-all hover:bg-blue-600/10 group"
-  style={{ color: 'var(--foreground)' }}
->
-  <ShoppingCart size={22} className="group-hover:text-blue-600 transition-colors" />
-  
-  {mounted && itemCount > 0 && (
-    <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 shadow-sm"
-          style={{ borderColor: 'var(--nav-bg)' }}>
-      {itemCount}
-    </span>
-  )}
-</Link>
-            {/* MENU MÓVIL */}
+              href="/cart" 
+              className="relative p-2.5 flex items-center justify-center rounded-xl transition-all hover:bg-blue-600/10 group"
+              style={{ color: 'var(--foreground)' }}
+            >
+              <ShoppingCart size={22} className="group-hover:text-blue-600 transition-colors" />
+              {mounted && itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 shadow-sm"
+                      style={{ borderColor: 'var(--nav-bg)' }}>
+                  {itemCount}
+                </span>
+              )}
+            </Link>
+
+            {/* BOTÓN HAMBURGUESA */}
             <button 
-              className="md:hidden p-2.5 rounded-xl border transition-all" 
+              className="md:hidden p-2.5 rounded-xl border transition-all active:scale-95" 
               style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
@@ -169,7 +163,62 @@ export const Navbar = () => {
         </div>
       </nav>
       
-      {/* ESPACIADOR PARA QUE EL CONTENIDO NO SE META DEBAJO DEL NAVBAR */}
+      {/* MENÚ MÓVIL (DESPLEGABLE) */}
+      <div className={`md:hidden fixed inset-0 z-40 transition-all duration-300 ${isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+        {/* Overlay oscuro */}
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
+        
+        {/* Contenido del menú */}
+        <div 
+          className={`absolute right-0 top-0 h-full w-[280px] shadow-2xl transition-transform duration-300 p-6 flex flex-col gap-6 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          style={{ backgroundColor: 'var(--card-bg)' }}
+        >
+          <div className="flex items-center justify-between mt-4">
+            <span className="font-black text-xs uppercase tracking-widest" style={{ color: 'var(--foreground)' }}>Menú</span>
+            <button onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--foreground)' }}>
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-bold p-3 rounded-xl hover:bg-blue-600/10 transition-colors" style={{ color: 'var(--foreground)' }}>
+              Inicio
+            </Link>
+            <Link href="/productos" onClick={() => setIsMobileMenuOpen(false)} className="text-lg font-bold p-3 rounded-xl hover:bg-blue-600/10 transition-colors" style={{ color: 'var(--foreground)' }}>
+              Todos los Productos
+            </Link>
+            
+            <div className="h-px w-full opacity-10 my-2" style={{ backgroundColor: 'var(--foreground)' }} />
+            
+            <span className="text-[10px] font-black uppercase opacity-50 px-3" style={{ color: 'var(--foreground)' }}>Categorías</span>
+            <div className="grid grid-cols-1 gap-1">
+              {categories.map((cat: any) => (
+                <Link 
+                  key={cat._id} 
+                  href={`/productos?categoria=${cat.name}`} 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="px-3 py-2 text-sm font-medium hover:text-blue-600 transition-colors"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  {cat.name}
+                </Link>
+              ))}
+            </div>
+
+            {mounted && isLoggedIn && (
+              <Link 
+                href="/admin" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="mt-4 flex items-center gap-2 p-3 bg-blue-600 text-white rounded-xl font-bold justify-center"
+              >
+                <ShieldCheck size={20} />
+                Panel Admin
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="h-20" />
     </>
   );
