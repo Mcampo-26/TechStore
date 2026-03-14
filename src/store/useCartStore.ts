@@ -18,10 +18,12 @@ interface CartState {
   isDrawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
-  setCart: (newCart: CartItem[]) => void; // Añadido para corregir el error de Turbopack
+  setCart: (newCart: CartItem[]) => void;
   addToCart: (product: any, userId?: string) => Promise<void>;
   removeFromCart: (productId: string, userId?: string) => Promise<void>;
   updateQuantity: (productId: string, newQuantity: number, userId?: string) => Promise<void>;
+  // AGREGAMOS ESTA LÍNEA PARA SOLUCIONAR EL ERROR DEL BUILD
+  revalidateCartStock: (products: any[]) => void; 
 }
 
 export const useCartStore = create<CartState>()(
@@ -32,9 +34,17 @@ export const useCartStore = create<CartState>()(
 
       openDrawer: () => set({ isDrawerOpen: true }),
       closeDrawer: () => set({ isDrawerOpen: false }),
-      
-      // Acción para setear el carrito directamente (limpieza o sincronización)
       setCart: (newCart) => set({ cart: newCart }),
+
+      // Implementamos la función que pide la página de carrito
+      revalidateCartStock: (allProducts) => {
+        const currentCart = get().cart;
+        const updatedCart = currentCart.map(item => {
+          const freshProduct = allProducts.find(p => (p.id || p._id) === item.id);
+          return freshProduct ? { ...item, stock: freshProduct.stock } : item;
+        });
+        set({ cart: updatedCart });
+      },
 
       addToCart: async (product, userId) => {
         const productId = product.id || product._id;
@@ -42,34 +52,25 @@ export const useCartStore = create<CartState>()(
         const existing = currentCart.find((item) => item.id === productId);
         const availableStock = Number(product.stock);
 
-        // 1. VALIDACIÓN DE STOCK MÁXIMO
         if (existing && existing.quantity >= availableStock) {
-          // Cerramos el drawer inmediatamente para que no se encime con la alerta
           set({ isDrawerOpen: false });
-
           Swal.fire({
             title: '¡LÍMITE ALCANZADO!',
-            text: 'Has alcanzado el stock máximo disponible para este producto.',
+            text: 'Has alcanzado el stock máximo disponible.',
             icon: 'warning',
             iconColor: '#2563eb',
-            background: '#ffffff', // Fondo sólido para evitar transparencias
-            color: '#000000',      // Texto negro sólido
-            showConfirmButton: true,
+            background: '#ffffff',
+            color: '#000000',
             confirmButtonText: 'ENTENDIDO',
-            confirmButtonColor: '#2563eb',
             buttonsStyling: false,
             customClass: {
-              popup: 'rounded-[2.5rem] border-4 border-blue-600 shadow-[0_0_50px_rgba(0,0,0,0.3)] !opacity-100',
-              title: 'font-black uppercase italic tracking-tighter text-3xl !text-black',
-              htmlContainer: '!font-black !opacity-100 text-sm uppercase tracking-wide !text-gray-800',
-              confirmButton: 'px-12 py-5 bg-blue-600 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-700 transition-all active:scale-95 shadow-xl shadow-blue-500/40'
+              popup: 'rounded-[2.5rem] border-4 border-blue-600 !opacity-100',
+              confirmButton: 'px-12 py-5 bg-blue-600 text-white font-black rounded-2xl'
             }
           });
-          
-          return; // Detenemos la ejecución aquí
+          return;
         }
 
-        // 2. LÓGICA DE ACTUALIZACIÓN
         let updatedCart: CartItem[];
         if (existing) {
           updatedCart = currentCart.map((item) =>
@@ -86,23 +87,19 @@ export const useCartStore = create<CartState>()(
             stock: availableStock,
           }];
         }
-
-        // Si no hubo error de stock, actualizamos el carrito y abrimos el banner
         set({ cart: updatedCart, isDrawerOpen: true });
-        
-        if (userId) { /* sync logic */ }
       },
 
-      removeFromCart: async (productId, userId) => {
-        const updatedCart = get().cart.filter((item) => item.id !== productId);
-        set({ cart: updatedCart });
+      removeFromCart: async (productId) => {
+        set({ cart: get().cart.filter((item) => item.id !== productId) });
       },
 
-      updateQuantity: async (productId, newQuantity, userId) => {
-        const updatedCart = get().cart.map((item) =>
-          item.id === productId ? { ...item, quantity: Math.max(1, newQuantity) } : item
-        );
-        set({ cart: updatedCart });
+      updateQuantity: async (productId, newQuantity) => {
+        set({
+          cart: get().cart.map((item) =>
+            item.id === productId ? { ...item, quantity: Math.max(1, newQuantity) } : item
+          ),
+        });
       },
     }),
     { name: 'cart-storage' }
