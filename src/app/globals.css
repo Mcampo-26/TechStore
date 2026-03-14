@@ -3,31 +3,103 @@
 @source "../../src";
 
 :root {
-  /* Azul estilo corporativo / ML Blue */
   --ml-blue: #3483fa;
   --ml-blue-dark: #2968c8;
-  --background: #ebebeb; /* Gris claro de fondo típico de ML */
-  --foreground: #333333;
+  
+  /* Variables Modo Claro */
+  --background: #f1f5f9; 
+  --foreground: #1e293b;
+  --nav-bg: rgba(255, 255, 255, 0.7);
+  --card-bg: rgba(255, 255, 255, 0.4);
+  --border-theme: rgba(0, 0, 0, 0.05);
+}
+
+/* MODO OSCURO - VERSIÓN ACLARADA Y ULTRA-TRANSPARENTE */
+:root.dark {
+  /* Fondo: Un gris slate azulado, no negro. Esto quita lo "oscuro" pesado */
+  --background: #1e293b; 
+  --foreground: #f8fafc;
+  
+  /* Navbar: Cristal puro, muy lavado */
+  --nav-bg: rgba(30, 41, 59, 0.3);
+  
+  /* Cards: Máxima transparencia */
+  --card-bg: rgba(255, 255, 255, 0.02); 
+  
+  /* Bordes: Una línea de luz muy fina */
+  --border-theme: rgba(255, 255, 255, 0.1);
+
+  --blue-theme: #60a5fa; /* Azul más claro para que brille */
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-geist-sans), Arial, sans-serif;
+  transition: background-color 0.4s ease, color 0.4s ease;
+  min-height: 100vh;
+  position: relative;
 }
 
-.cart-shake {
-  animation: shake-animation 0.5s cubic-bezier(.36,.07,.19,.97) both;
-  animation-iteration-count: 2;
+/* GRADIENTE PARA ACLARAR EL FONDO */
+:root.dark body {
+  /* Usamos un degradado que meta "luz" blanca/azul en el centro */
+  background-image: 
+    radial-gradient(at 50% 0%, rgba(96, 165, 250, 0.15) 0px, transparent 70%),
+    radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.8) 0px, transparent 100%);
+  background-attachment: fixed;
 }
 
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+/* TEXTURA DE GRANO (Para que la transparencia tenga "cuerpo") */
+:root.dark body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
 }
 
-.animate-shake {
-  animation: shake 0.2s ease-in-out 0s 2;
+/* LA CLASE DEL NAVBAR Y CARDS (Igual a la imagen pero más clara) */
+.glass-effect {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border-theme);
+  background-color: var(--card-bg) !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+}
+
+/* Herencia de colores */
+h1, h2, h3, h4, h5, h6, span, p, a, li, label, input, textarea, select {
+  color: inherit;
+}
+
+/* --- ANIMACIONES --- */
+@keyframes cart-shake {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.1) rotate(-5deg); }
+  50% { transform: scale(1.1) rotate(5deg); }
+  75% { transform: scale(1.1) rotate(-5deg); }
+}
+
+.animate-cart-pop {
+  animation: cart-shake 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Scrollbar para este modo más claro */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
 }

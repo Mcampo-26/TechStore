@@ -1,33 +1,50 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { ShoppingCart, LogOut, User, Laptop, Menu, X, ShieldCheck, ChevronDown } from 'lucide-react'; 
+import { ShoppingCart, LogOut, User, Laptop, Menu, X, ShieldCheck, ChevronDown, Sun, Moon } from 'lucide-react'; 
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useCategoryStore } from '@/store/useCategoryStore'; // Importamos el store
+import { useCategoryStore } from '@/store/useCategoryStore';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export const Navbar = () => {
   const router = useRouter();
-  
   const cart = useCartStore((state) => state.cart);
-  const { isLoggedIn, logout, user } = useAuthStore();
-  const { categories, fetchCategories } = useCategoryStore(); // Consumimos categorías
+  const { isLoggedIn, logout } = useAuthStore();
+  const { categories, fetchCategories } = useCategoryStore();
   
   const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    fetchCategories(); // Cargamos categorías al montar el componente
+    fetchCategories();
+    
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
   }, [fetchCategories]);
 
-  const itemCount = (mounted && isLoggedIn) 
-    ? cart.reduce((acc, item) => acc + item.quantity, 0) 
-    : 0;
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    if (newTheme) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
+  // Cálculo de items del carrito
+  const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -44,141 +61,116 @@ export const Navbar = () => {
     <>
       {isLoggingOut && <LoadingOverlay message="Cerrando sesión..." />}
 
-      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
+      <nav 
+        className="fixed top-0 w-full backdrop-blur-md z-50 border-b transition-colors duration-300 h-20 flex items-center"
+        style={{ 
+          backgroundColor: 'var(--nav-bg)', 
+          borderColor: 'var(--border-theme)' 
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-6 w-full flex items-center justify-between gap-4">
           
-          {/* LOGO Y NOMBRE */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="bg-blue-600 text-white p-2 rounded-xl group-hover:rotate-6 transition-transform">
-                <Laptop size={22} />
-              </div>
-              <span className="text-xl font-black tracking-tighter text-slate-900 hidden sm:block">
-                TECH<span className="text-blue-600">STORE</span>
-              </span>
-            </Link>
-
-            <div className="md:hidden ml-2 pl-3 border-l border-gray-200">
-              <span className="text-[12px] font-black uppercase tracking-tighter text-slate-900">
-                TECH<span className="text-blue-600 ml-1">STORE</span>
-              </span>
+          {/* LOGO */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="bg-blue-600 text-white p-2 rounded-xl group-hover:rotate-6 transition-transform shadow-lg shadow-blue-500/20">
+              <Laptop size={22} />
             </div>
-          </div>
+            <span className="text-xl font-black tracking-tighter hidden sm:block uppercase" style={{ color: 'var(--foreground)' }}>
+              TECH<span className="text-blue-600">STORE</span>
+            </span>
+          </Link>
 
-          {/* NAVEGACIÓN (Desktop) */}
-          <ul className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
-            <li><Link href="/" className="hover:text-blue-600 transition-colors">Inicio</Link></li>
-            
-            {/* CATEGORÍAS DESPLEGABLES DESKTOP */}
+          {/* NAVEGACIÓN DESKTOP */}
+          <ul className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest">
+            <li><Link href="/" className="hover:text-blue-600 transition-colors" style={{ color: 'var(--foreground)' }}>Inicio</Link></li>
             <li className="relative group">
-              <button className="flex items-center gap-1 hover:text-blue-600 transition-colors py-8">
+              <button className="flex items-center gap-1 hover:text-blue-600 transition-colors py-4 uppercase" style={{ color: 'var(--foreground)' }}>
                 Productos <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
               </button>
-              
-              <div className="absolute top-[70px] left-0 w-48 bg-white shadow-xl border border-gray-100 rounded-2xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-1">
-                <Link href="/productos" className="block px-4 py-2 hover:bg-blue-50 rounded-xl text-xs font-bold text-blue-600 mb-1">
-                  Ver Todo
+              <div 
+                className="absolute top-full left-0 w-48 shadow-2xl border rounded-2xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all translate-y-2 group-hover:translate-y-0"
+                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}
+              >
+                <Link href="/productos" className="block px-4 py-2 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-black mb-1 transition-colors">
+                  VER TODO EL CATÁLOGO
                 </Link>
-                <div className="h-[1px] bg-gray-50 my-1" />
+                <div className="h-px w-full my-1 opacity-10" style={{ backgroundColor: 'var(--foreground)' }} />
                 {categories.map((cat: any) => (
-                  <Link 
-                    key={cat._id}
-                    href={`/productos?categoria=${cat.name}`} 
-                    className="block px-4 py-2 hover:bg-slate-50 rounded-xl text-xs text-slate-600 hover:text-blue-600 transition-colors"
-                  >
+                  <Link key={cat._id} href={`/productos?categoria=${cat.name}`} className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[10px] transition-colors" style={{ color: 'var(--foreground)' }}>
                     {cat.name}
                   </Link>
                 ))}
               </div>
             </li>
-            
+
             {mounted && isLoggedIn && (
               <li>
                 <Link 
                   href="/admin" 
-                  className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[10px] font-black uppercase tracking-tighter
+                             bg-blue-600/10 text-blue-600 border-blue-600/20 hover:bg-blue-600 hover:text-white"
                 >
-                  <ShieldCheck size={16} />
+                  <ShieldCheck size={14} />
                   Panel Admin
                 </Link>
               </li>
             )}
           </ul>
 
-          {/* ACCIONES (Login, Carrito, etc) */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          {/* ACCIONES */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            
+            {/* TOGGLE DARK MODE */}
+            <button 
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl transition-all border hover:border-blue-600 hover:text-blue-600"
+              style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
+            >
+              {mounted && (isDarkMode ? <Sun size={18} /> : <Moon size={18} />)}
+            </button>
+
+            {/* LOGIN / LOGOUT */}
             {mounted && isLoggedIn ? (
-              <div className="flex items-center gap-3">
-                <span className="hidden lg:block text-xs font-bold text-slate-400 uppercase tracking-widest">
-                  Hola, {user?.name?.split(' ')[0]}
-                </span>
-                <button onClick={handleLogout} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                  <LogOut size={20} />
-                </button>
-              </div>
+              <button onClick={handleLogout} className="p-2.5 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border border-transparent hover:border-red-600">
+                <LogOut size={18} />
+              </button>
             ) : (
-              <Link href="/login" className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-colors font-medium text-sm">
-                <User size={20} />
+              <Link href="/login" className="flex items-center gap-2 px-4 py-2.5 hover:bg-blue-600 hover:text-white rounded-xl transition-all font-black text-[10px] uppercase border"
+                    style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}>
+                <User size={18} />
                 <span className="hidden sm:inline">Ingresar</span>
               </Link>
             )}
 
-            <Link href="/cart" className="relative p-2.5 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all active:scale-95 shadow-md">
-              <ShoppingCart size={20} />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
-                  {itemCount}
-                </span>
-              )}
-            </Link>
-
-            <button className="md:hidden p-2 text-slate-600" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {/* BOTÓN CARRITO REINCORPORADO */}
+            <Link 
+  href="/cart" 
+  className="relative p-2.5 flex items-center justify-center rounded-xl transition-all hover:bg-blue-600/10 group"
+  style={{ color: 'var(--foreground)' }}
+>
+  <ShoppingCart size={22} className="group-hover:text-blue-600 transition-colors" />
+  
+  {mounted && itemCount > 0 && (
+    <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 shadow-sm"
+          style={{ borderColor: 'var(--nav-bg)' }}>
+      {itemCount}
+    </span>
+  )}
+</Link>
+            {/* MENU MÓVIL */}
+            <button 
+              className="md:hidden p-2.5 rounded-xl border transition-all" 
+              style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
-
-        {/* MENÚ DESPLEGABLE (Móvil) */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-gray-100 px-6 py-4 space-y-4 shadow-xl max-h-[80vh] overflow-y-auto">
-            <Link href="/" className="block font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Inicio</Link>
-            
-            {/* SECCIÓN CATEGORÍAS MÓVIL */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Categorías</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Link 
-                  href="/productos" 
-                  className="text-sm font-bold text-blue-600 bg-blue-50 p-2 rounded-lg"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Ver Todo
-                </Link>
-                {categories.map((cat: any) => (
-                  <Link 
-                    key={cat._id}
-                    href={`/productos?categoria=${cat.name}`}
-                    className="text-sm text-slate-600 bg-slate-50 p-2 rounded-lg"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {isLoggedIn && (
-              <Link href="/admin" className="flex items-center gap-2 font-bold text-blue-600 bg-blue-50 p-2 rounded-lg" onClick={() => setIsMobileMenuOpen(false)}>
-                <ShieldCheck size={18} /> Panel Admin
-              </Link>
-            )}
-
-            {!isLoggedIn && (
-              <Link href="/login" className="block font-medium text-slate-600" onClick={() => setIsMobileMenuOpen(false)}>Ingresar</Link>
-            )}
-          </div>
-        )}
       </nav>
+      
+      {/* ESPACIADOR PARA QUE EL CONTENIDO NO SE META DEBAJO DEL NAVBAR */}
+      <div className="h-20" />
     </>
   );
 };

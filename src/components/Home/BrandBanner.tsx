@@ -13,34 +13,44 @@ const BRANDS = [
 
 export const BrandBanner = () => {
   return (
-    <section className="bg-white py-12 border-b border-gray-100 overflow-hidden relative">
-      {/* Título sutil opcional */}
-      <div className="max-w-7xl mx-auto px-6 mb-8">
-        <p className="text-[10px] font-bold tracking-[0.3em] text-slate-400 uppercase text-center md:text-left">
-          Marcas que confían en nosotros
-        </p>
+    <section className="py-16 border-b overflow-hidden relative" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border-theme)' }}>
+      
+      {/* Título Estilo Tech */}
+      <div className="max-w-7xl mx-auto px-6 mb-12">
+        <div className="flex items-center gap-4 opacity-40">
+          <div className="h-[1px] flex-1 bg-current" />
+          <p className="text-[10px] font-black tracking-[0.4em] uppercase whitespace-nowrap" style={{ color: 'var(--foreground)' }}>
+            Partners Tecnológicos
+          </p>
+          <div className="h-[1px] flex-1 bg-current" />
+        </div>
       </div>
 
-      {/* Contenedor con degradado a los lados (Fade Effect) */}
+      {/* Slider Contenedor */}
       <div className="relative flex items-center">
-        {/* Lados difuminados para un look premium */}
-        <div className="absolute left-0 w-20 h-full bg-gradient-to-r from-white to-transparent z-10"></div>
-        <div className="absolute right-0 w-20 h-full bg-gradient-to-l from-white to-transparent z-10"></div>
+        {/* Overlays de desvanecimiento laterales dinámicos */}
+        <div className="absolute left-0 w-32 h-full z-10 pointer-events-none" 
+             style={{ background: 'linear-gradient(to right, var(--background), transparent)' }} />
+        <div className="absolute right-0 w-32 h-full z-10 pointer-events-none" 
+             style={{ background: 'linear-gradient(to left, var(--background), transparent)' }} />
 
-        <div className="flex animate-marquee hover:pause-marquee whitespace-nowrap gap-16 items-center">
-          {/* Duplicamos la lista para el efecto infinito */}
-          {[...BRANDS, ...BRANDS].map((brand, index) => (
+        <div className="flex animate-marquee hover:pause-marquee whitespace-nowrap gap-20 items-center">
+          {/* Triplicamos para asegurar que no haya saltos visuales en pantallas anchas */}
+          {[...BRANDS, ...BRANDS, ...BRANDS].map((brand, index) => (
             <div 
               key={index} 
-              className="group flex flex-col items-center justify-center min-w-[120px]"
+              className="group flex flex-col items-center justify-center min-w-[140px]"
             >
-              <img 
-                src={brand.logo} 
-                alt={brand.name} 
-                className="h-8 md:h-10 w-auto object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 cursor-pointer scale-90 group-hover:scale-110"
-              />
-              {/* Opcional: Nombre de la marca debajo (muy sutil) */}
-              <span className="mt-2 text-[9px] text-gray-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-tighter">
+              <div className="h-12 flex items-center justify-center">
+                <img 
+                  src={brand.logo} 
+                  alt={brand.name} 
+                  className="h-full w-auto object-contain grayscale invert-0 dark:invert-[0.8] opacity-40 group-hover:grayscale-0 group-hover:invert-0 group-hover:opacity-100 transition-all duration-500 cursor-pointer scale-90 group-hover:scale-110"
+                />
+              </div>
+              
+              {/* Etiqueta flotante sutil */}
+              <span className="mt-4 text-[8px] font-black text-blue-600 opacity-0 group-hover:opacity-100 transition-all uppercase tracking-[0.2em] translate-y-2 group-hover:translate-y-0">
                 {brand.name}
               </span>
             </div>
@@ -51,11 +61,11 @@ export const BrandBanner = () => {
       <style jsx>{`
         @keyframes marquee {
           0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          100% { transform: translateX(-33.33%); }
         }
         .animate-marquee {
           display: flex;
-          animation: marquee 30s linear infinite;
+          animation: marquee 40s linear infinite;
         }
         .pause-marquee:hover {
           animation-play-state: paused;

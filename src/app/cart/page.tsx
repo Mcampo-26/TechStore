@@ -27,49 +27,61 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm flex items-center gap-4 border border-transparent">
-      <img src={item.image} alt={item.name} className="w-24 h-24 object-contain" />
+    <div className="p-4 rounded-xl shadow-sm flex items-center gap-4 border transition-all duration-300"
+         style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
+      
+      {/* Contenedor de imagen con fondo blanco siempre para que el producto luzca bien */}
+      <div className="bg-white p-2 rounded-lg w-24 h-24 flex items-center justify-center">
+        <img src={item.image} alt={item.name} className="max-h-full object-contain" />
+      </div>
       
       <div className="flex-grow">
-        <h3 className="text-gray-800 font-medium">{item.name}</h3>
+        <h3 className="font-medium text-sm md:text-base" style={{ color: 'var(--foreground)' }}>
+          {item.name}
+        </h3>
         
         <div className="flex items-center justify-between mt-4">
           <div className="relative">
             {showError && (
-              <div className="absolute -top-10 left-0 bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg animate-bounce flex items-center gap-1 z-10">
-                <AlertTriangle size={10} className="text-yellow-400" />
+              <div className="absolute -top-10 left-0 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-bounce flex items-center gap-1 z-10 font-bold">
+                <AlertTriangle size={10} className="text-white" />
                 Solo hay {stock} disponibles
               </div>
             )}
 
-            <div className={`flex items-center border border-gray-300 rounded-lg overflow-hidden transition-transform ${showError ? 'animate-shake border-red-500' : ''}`}>
+            <div className={`flex items-center border rounded-lg overflow-hidden transition-all ${showError ? 'animate-shake border-red-500' : ''}`}
+                 style={{ borderColor: 'var(--border-theme)' }}>
               <button 
                 onClick={() => updateQuantity(item.id, quantity - 1, userId)} 
-                className="p-2 hover:bg-gray-50 disabled:opacity-20" 
+                className="p-2 opacity-60 hover:opacity-100 disabled:opacity-20" 
+                style={{ color: 'var(--foreground)' }}
                 disabled={quantity <= 1}
               >
                 <AiOutlineMinus />
               </button>
 
-              <span className="px-4 font-bold text-gray-700">{quantity}</span>
+              <span className="px-4 font-bold" style={{ color: 'var(--foreground)' }}>{quantity}</span>
 
               <button 
                 onClick={handleIncrease} 
-                className={`p-2 transition-colors ${quantity >= stock ? 'text-gray-300' : 'text-blue-600 hover:bg-gray-50'}`}
+                className={`p-2 transition-colors ${quantity >= stock ? 'opacity-20' : 'text-blue-500 hover:bg-blue-500/10'}`}
               >
                 <AiOutlinePlus />
               </button>
             </div>
           </div>
           
-          <button onClick={() => removeFromCart(item.id, userId)} className="text-gray-400 hover:text-red-500 transition-colors">
+          <button onClick={() => removeFromCart(item.id, userId)} 
+                  className="opacity-40 hover:opacity-100 hover:text-red-500 transition-all">
             <Trash2 size={20} />
           </button>
         </div>
       </div>
 
       <div className="text-right min-w-[100px]">
-        <p className="text-xl font-light">$ {(price * quantity).toLocaleString('es-AR')}</p>
+        <p className="text-xl font-light" style={{ color: 'var(--foreground)' }}>
+          $ {(price * quantity).toLocaleString('es-AR')}
+        </p>
       </div>
     </div>
   );
@@ -80,7 +92,7 @@ export default function CarritoPage() {
   const { user } = useAuthStore();
   const { products } = useProductStore();
   const [isMounted, setIsMounted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Estado para el loader
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => { 
@@ -99,10 +111,8 @@ export default function CarritoPage() {
     return acc + (p * q);
   }, 0);
 
-  // Función para manejar el clic en continuar
   const handleCheckout = () => {
     setIsLoading(true);
-    // Simulamos una carga de red de 1.5 segundos
     setTimeout(() => {
       router.push("/checkout");
     }, 1500);
@@ -112,11 +122,13 @@ export default function CarritoPage() {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] pt-32 flex flex-col items-center">
-        <div className="bg-white p-10 rounded-xl shadow-sm text-center max-w-md w-full mx-4">
-          <ShoppingBag size={80} className="mx-auto text-gray-200 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Tu carrito está vacío</h2>
-          <Link href="/" className="bg-[#3483fa] text-white px-8 py-3 rounded-lg font-bold block mt-6">
+      <div className="min-h-screen pt-32 flex flex-col items-center transition-colors duration-300"
+           style={{ backgroundColor: 'var(--background)' }}>
+        <div className="p-10 rounded-3xl border text-center max-w-md w-full mx-4 shadow-xl"
+             style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
+          <ShoppingBag size={80} className="mx-auto opacity-10 mb-4" style={{ color: 'var(--foreground)' }} />
+          <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>Tu carrito está vacío</h2>
+          <Link href="/" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold block mt-6 hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20">
             Ir a la tienda
           </Link>
         </div>
@@ -125,9 +137,11 @@ export default function CarritoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] pt-28 pb-12 px-4">
+    <div className="min-h-screen pt-28 pb-12 px-4 transition-colors duration-300"
+         style={{ backgroundColor: 'var(--background)' }}>
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-8">Carrito de compras</h1>
+        <h1 className="text-2xl font-bold mb-8" style={{ color: 'var(--foreground)' }}>Carrito de compras</h1>
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
             {cart.map((item) => (
@@ -142,21 +156,22 @@ export default function CarritoPage() {
           </div>
           
           <div className="lg:col-span-1">
-             <div className="bg-white p-6 rounded-xl shadow-sm sticky top-28 border border-gray-100">
-               <h2 className="text-lg font-bold mb-6 border-b pb-4 text-gray-800">Resumen de compra</h2>
+             <div className="p-6 rounded-2xl border sticky top-28 shadow-xl transition-all"
+                  style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
+               <h2 className="text-lg font-bold mb-6 border-b pb-4" style={{ color: 'var(--foreground)', borderColor: 'var(--border-theme)' }}>Resumen de compra</h2>
                
                <div className="space-y-3 mb-6">
-                 <div className="flex justify-between text-gray-600 text-sm">
+                 <div className="flex justify-between text-sm opacity-60" style={{ color: 'var(--foreground)' }}>
                    <span>Productos ({cart.length})</span>
                    <span>$ {subtotal.toLocaleString('es-AR')}</span>
                  </div>
-                 <div className="flex justify-between text-green-600 text-sm font-medium">
+                 <div className="flex justify-between text-emerald-500 text-sm font-bold uppercase tracking-tighter">
                    <span>Envío</span>
                    <span>Gratis</span>
                  </div>
                </div>
 
-               <div className="flex justify-between text-xl font-bold pt-4 border-t border-gray-100">
+               <div className="flex justify-between text-xl font-black pt-4 border-t" style={{ color: 'var(--foreground)', borderColor: 'var(--border-theme)' }}>
                  <span>Total</span>
                  <span>$ {subtotal.toLocaleString('es-AR')}</span>
                </div>
@@ -164,11 +179,10 @@ export default function CarritoPage() {
                <button 
                  onClick={handleCheckout}
                  disabled={isLoading}
-                 className="w-full bg-[#3483fa] text-white py-4 rounded-xl font-bold mt-6 hover:bg-blue-600 transition-all flex items-center justify-center disabled:bg-blue-300 disabled:cursor-not-allowed"
+                 className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-6 hover:bg-blue-500 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
                >
                  {isLoading ? (
                    <div className="flex items-center gap-3">
-                     {/* Spinner animado */}
                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                      <span>Procesando...</span>
                    </div>
@@ -177,7 +191,7 @@ export default function CarritoPage() {
                  )}
                </button>
                
-               <p className="text-[11px] text-gray-400 text-center mt-4 uppercase tracking-tighter">
+               <p className="text-[11px] opacity-40 text-center mt-4 uppercase tracking-tighter font-bold" style={{ color: 'var(--foreground)' }}>
                  Compra segura con tecnología de encriptación
                </p>
              </div>

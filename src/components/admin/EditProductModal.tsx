@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { X, Save, Plus, Image as ImageIcon, Tag, Zap, Percent, Edit3, PlusCircle } from 'lucide-react';
+import { X, Save, Plus, Image as ImageIcon, Tag, Zap, Percent, Edit3, PlusCircle, LayoutGrid, Package, Info } from 'lucide-react';
 import { useCategoryStore } from '@/store/useCategoryStore';
 
 interface EditProductModalProps {
@@ -15,25 +15,20 @@ interface EditProductModalProps {
 
 export const EditProductModal = ({ isOpen, onClose, product, setProduct, onUpdate, isCreating = false }: EditProductModalProps) => {
   
-  // Hooks del Store de Categorías
   const { categories, fetchCategories, addCategory } = useCategoryStore();
-  
-  // Estados para nueva categoría "al vuelo"
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCatName, setNewCatName] = useState("");
 
-  // LOG: Monitorear cuando el producto cambia o el modal se abre
   useEffect(() => {
     if (isOpen) {
       console.log("📂 [MODAL] Abierto con producto:", product);
-      fetchCategories(); // Aseguramos tener las categorías actualizadas
+      fetchCategories();
       setIsAddingNew(false);
     }
   }, [isOpen, product, fetchCategories]);
 
   if (!isOpen || !product) return null;
 
-  // Función auxiliar para logs de cambios
   const handleFieldChange = (field: string, value: any) => {
     console.log(`✍️ [MODAL] Editando campo: ${field} ->`, value);
     setProduct({ ...product, [field]: value });
@@ -50,7 +45,6 @@ export const EditProductModal = ({ isOpen, onClose, product, setProduct, onUpdat
 
   const handleAddNewCategory = async () => {
     if (!newCatName.trim()) return;
-    
     const savedCategory = await addCategory(newCatName);
     if (savedCategory) {
       handleFieldChange('category', savedCategory.name);
@@ -65,196 +59,217 @@ export const EditProductModal = ({ isOpen, onClose, product, setProduct, onUpdat
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
+      <div className="rounded-[2.5rem] border shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col transition-all"
+           style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
         
-        {/* HEADER */}
-        <div className="sticky top-0 bg-white p-6 border-b flex justify-between items-center z-10">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            {isCreating ? <Plus className="text-[#3483fa]" /> : <Edit3 className="text-[#3483fa]" size={20} />}
-            {isCreating ? 'Crear Nuevo Producto' : 'Editar Producto'}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+        {/* HEADER ESTILO PREMIUM */}
+        <div className="p-8 border-b flex justify-between items-center" style={{ borderColor: 'var(--border-theme)' }}>
+          <div className="flex items-center gap-4">
+            <div className="bg-blue-600/10 p-3 rounded-2xl text-blue-600 border" style={{ borderColor: 'var(--border-theme)' }}>
+              {isCreating ? <PlusCircle size={24} /> : <Edit3 size={24} />}
+            </div>
+            <div>
+              <h2 className="text-xl font-black uppercase tracking-widest" style={{ color: 'var(--foreground)' }}>
+                {isCreating ? 'Nuevo Item' : 'Editor de Producto'}
+              </h2>
+              <p className="text-[10px] font-bold opacity-40 uppercase tracking-[0.2em]" style={{ color: 'var(--foreground)' }}>
+                Gestión de Inventario TechStore
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors opacity-50 hover:opacity-100">
             <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleFormSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           
           {/* SECCIÓN: OFERTA RELÁMPAGO */}
-          <div className={`p-4 rounded-xl border-2 transition-all ${product.isOferta ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-transparent'}`}>
+          <div className={`p-6 rounded-[2rem] border-2 transition-all ${product.isOferta ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20' : 'bg-transparent border-dashed opacity-60'}`}
+               style={{ borderColor: product.isOferta ? '' : 'var(--border-theme)' }}>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={`p-2 rounded-lg ${product.isOferta ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                  <Zap size={18} fill={product.isOferta ? "currentColor" : "none"} />
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-2xl ${product.isOferta ? 'bg-white text-blue-600' : 'bg-gray-500/10 text-gray-500'}`}>
+                  <Zap size={20} fill="currentColor" />
                 </div>
                 <div>
-                  <h3 className={`font-bold text-sm ${product.isOferta ? 'text-blue-700' : 'text-gray-500'}`}>Oferta Relámpago</h3>
-                  <p className="text-[10px] text-gray-400 uppercase font-semibold">Destacar en la tienda</p>
+                  <h3 className={`font-black uppercase tracking-widest text-sm ${product.isOferta ? 'text-white' : ''}`} style={{ color: !product.isOferta ? 'var(--foreground)' : '' }}>
+                    Oferta Relámpago
+                  </h3>
+                  <p className={`text-[9px] font-bold uppercase tracking-widest ${product.isOferta ? 'text-blue-100' : 'opacity-40'}`} style={{ color: !product.isOferta ? 'var(--foreground)' : '' }}>
+                    Visibilidad prioritaria en tienda
+                  </p>
                 </div>
               </div>
               
               <button 
                 type="button"
                 onClick={() => handleFieldChange('isOferta', !product.isOferta)}
-                className={`w-12 h-6 rounded-full relative transition-colors ${product.isOferta ? 'bg-blue-500' : 'bg-gray-300'}`}
+                className={`w-14 h-7 rounded-full relative transition-all border-2 ${product.isOferta ? 'bg-white border-white' : 'bg-transparent border-current opacity-20'}`}
               >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${product.isOferta ? 'left-7' : 'left-1'}`} />
+                <div className={`absolute top-1 w-4 h-4 rounded-full transition-all ${product.isOferta ? 'left-8 bg-blue-600' : 'left-1 bg-current'}`} />
               </button>
             </div>
 
             {product.isOferta && (
-              <div className="mt-4 pt-4 border-t border-blue-100 animate-in fade-in slide-in-from-top-2">
-                <label className="block text-[10px] font-bold text-blue-600 uppercase mb-1 tracking-wider flex items-center gap-1">
-                  <Percent size={10} /> Porcentaje de Descuento
+              <div className="mt-6 pt-6 border-t border-white/20 animate-in fade-in zoom-in-95">
+                <label className="text-[10px] font-black text-white uppercase mb-2 tracking-[0.2em] flex items-center gap-2">
+                  <Percent size={12} /> Descuento Aplicado (%)
                 </label>
                 <input 
                   type="number" 
-                  className="w-full border border-blue-200 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none text-sm font-bold text-blue-700"
+                  className="w-full bg-white/10 border-2 border-white/20 p-4 rounded-2xl outline-none text-white font-black text-lg placeholder:text-white/40 focus:border-white"
                   value={product.descuentoPorcentaje || ''}
                   onChange={(e) => handleFieldChange('descuentoPorcentaje', Number(e.target.value))}
-                  placeholder="Ej: 40"
-                  min="0"
-                  max="100"
+                  placeholder="0"
                 />
               </div>
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* NOMBRE */}
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Nombre del Producto</label>
-              <input 
-                type="text" 
-                className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-[#3483fa] outline-none"
-                value={product.name || ''}
-                onChange={(e) => handleFieldChange('name', e.target.value)}
-                required
-              />
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2" style={{ color: 'var(--foreground)' }}>
+                Identificación del Producto
+              </label>
+              <div className="relative group">
+                <Edit3 className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 opacity-40 group-focus-within:opacity-100" size={18} />
+                <input 
+                  type="text" 
+                  className="w-full rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none transition-all border-2 bg-transparent focus:border-blue-500"
+                  style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
+                  value={product.name || ''}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  placeholder="Ej: MacBook Pro M3 Max"
+                  required
+                />
+              </div>
             </div>
 
-            {/* CATEGORÍA DINÁMICA */}
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider flex items-center gap-1">
-                <Tag size={10} /> Categoría
+            {/* CATEGORÍA */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2" style={{ color: 'var(--foreground)' }}>
+                <LayoutGrid size={10} className="inline mr-1" /> Categoría
               </label>
               
               {!isAddingNew ? (
                 <select 
-                  className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-[#3483fa] outline-none bg-white"
+                  className="w-full rounded-2xl py-4 px-4 text-sm font-bold outline-none border-2 bg-transparent focus:border-blue-500 cursor-pointer"
+                  style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
                   value={product.category || ''}
                   onChange={handleCategoryChange}
                   required
                 >
-                  <option value="">Selecciona una categoría...</option>
+                  <option value="" className="bg-slate-900 text-white">Seleccionar...</option>
                   {categories.map((cat: any) => (
-                    <option key={cat._id} value={cat.name}>
-                      {cat.name}
-                    </option>
+                    <option key={cat._id} value={cat.name} className="bg-slate-900 text-white">{cat.name}</option>
                   ))}
-                  <option value="NEW_CATEGORY" className="text-blue-600 font-bold">+ Crear Nueva Categoría</option>
+                  <option value="NEW_CATEGORY" className="text-blue-500 font-black">+ NUEVA CATEGORÍA</option>
                 </select>
               ) : (
-                <div className="flex gap-2 animate-in slide-in-from-left-2">
+                <div className="flex gap-2">
                   <input 
                     type="text" 
-                    className="flex-1 border border-blue-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                    placeholder="Nombre de la nueva categoría..."
+                    className="flex-1 rounded-2xl py-4 px-4 text-sm font-bold outline-none border-2 border-blue-500 bg-transparent"
+                    style={{ color: 'var(--foreground)' }}
+                    placeholder="Nombre..."
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
                     autoFocus
                   />
-                  <button 
-                    type="button"
-                    onClick={handleAddNewCategory}
-                    className="bg-blue-600 text-white px-4 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors"
-                  >
-                    Añadir
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setIsAddingNew(false)}
-                    className="bg-gray-100 text-gray-500 px-3 rounded-xl hover:bg-gray-200 transition-colors"
-                  >
-                    <X size={18} />
-                  </button>
+                  <button type="button" onClick={handleAddNewCategory} className="bg-blue-600 text-white px-4 rounded-2xl font-black text-[10px] uppercase tracking-widest">Añadir</button>
+                  <button type="button" onClick={() => setIsAddingNew(false)} className="p-4 rounded-2xl border-2" style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}><X size={18} /></button>
                 </div>
               )}
             </div>
 
-            {/* PRECIO Y STOCK */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Precio ($)</label>
+            {/* PRECIO */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2" style={{ color: 'var(--foreground)' }}>
+                Precio de Venta ($)
+              </label>
+              <input 
+                type="number" 
+                className="w-full rounded-2xl py-4 px-4 text-sm font-bold outline-none border-2 bg-transparent focus:border-blue-500"
+                style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
+                value={product.price || ''}
+                onChange={(e) => handleFieldChange('price', Number(e.target.value))}
+                required
+              />
+            </div>
+
+            {/* STOCK (CAMPO REINSTALADO) */}
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2" style={{ color: 'var(--foreground)' }}>
+                <Package size={10} className="inline mr-1" /> Unidades en Stock
+              </label>
+              <div className="relative group">
+                <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 opacity-40 group-focus-within:opacity-100" size={18} />
                 <input 
                   type="number" 
-                  className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-[#3483fa] outline-none"
-                  value={product.price || ''}
-                  onChange={(e) => handleFieldChange('price', Number(e.target.value))}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Stock Disponible</label>
-                <input 
-                  type="number" 
-                  className="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-[#3483fa] outline-none"
-                  value={product.stock || ''}
+                  className="w-full rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none transition-all border-2 bg-transparent focus:border-blue-500"
+                  style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
+                  value={product.stock ?? ''}
                   onChange={(e) => handleFieldChange('stock', Number(e.target.value))}
+                  placeholder="Cantidad disponible para vender"
                   required
                 />
               </div>
-            </div>
-
-            {/* IMÁGENES */}
-            <div className="bg-gray-50 p-4 rounded-xl space-y-3 border border-gray-200">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Galería de Imágenes (URLs)</label>
-              <input 
-                type="text" 
-                className="w-full border border-gray-200 p-2 rounded-lg text-sm" 
-                value={product.image || ''} 
-                onChange={(e) => handleFieldChange('image', e.target.value)} 
-                placeholder="Imagen 1 (Principal)" 
-                required 
-              />
-              <input 
-                type="text" 
-                className="w-full border border-gray-200 p-2 rounded-lg text-sm" 
-                value={product.image2 || ''} 
-                onChange={(e) => handleFieldChange('image2', e.target.value)} 
-                placeholder="Imagen 2" 
-              />
-              <input 
-                type="text" 
-                className="w-full border border-gray-200 p-2 rounded-lg text-sm" 
-                value={product.image3 || ''} 
-                onChange={(e) => handleFieldChange('image3', e.target.value)} 
-                placeholder="Imagen 3" 
-              />
-            </div>
-
-            {/* DESCRIPCIÓN */}
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-wider">Descripción</label>
-              <textarea 
-                className="w-full border border-gray-200 p-3 rounded-lg h-28 resize-none outline-none focus:ring-2 focus:ring-[#3483fa]"
-                value={product.description || ''}
-                onChange={(e) => handleFieldChange('description', e.target.value)}
-              ></textarea>
             </div>
           </div>
 
-          {/* BOTONES */}
-          <div className="flex gap-3 pt-4 border-t sticky bottom-0 bg-white pb-2">
-            <button type="button" onClick={onClose} className="flex-1 py-3 border border-gray-200 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-colors">
-              Cancelar
-            </button>
-            <button type="submit" className="flex-1 py-3 bg-[#3483fa] text-white rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-[#2a6fd6] transition-colors">
-              {isCreating ? 'Crear Producto' : 'Guardar Cambios'}
-            </button>
+          {/* IMÁGENES */}
+          <div className="space-y-3 p-6 rounded-[2rem] border-2 border-dashed" style={{ borderColor: 'var(--border-theme)' }}>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 flex items-center gap-2">
+              <ImageIcon size={14} /> Activos Visuales (URLs)
+            </label>
+            <div className="space-y-3">
+              {[ {k: 'image', p: 'Imagen Principal'}, {k: 'image2', p: 'Vista Lateral'}, {k: 'image3', p: 'Detalle Tech'} ].map((img) => (
+                <input 
+                  key={img.k}
+                  type="text" 
+                  className="w-full rounded-xl py-3 px-4 text-xs font-bold outline-none border bg-transparent focus:border-blue-500"
+                  style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
+                  value={product[img.k] || ''} 
+                  onChange={(e) => handleFieldChange(img.k, e.target.value)} 
+                  placeholder={img.p} 
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* DESCRIPCIÓN */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2" style={{ color: 'var(--foreground)' }}>
+              <Info size={10} className="inline mr-1" /> Especificaciones y Detalles
+            </label>
+            <textarea 
+              className="w-full rounded-[1.5rem] py-4 px-4 text-sm font-bold outline-none border-2 bg-transparent focus:border-blue-500 h-32 resize-none"
+              style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
+              value={product.description || ''}
+              onChange={(e) => handleFieldChange('description', e.target.value)}
+              placeholder="Describe las capacidades del equipo..."
+            />
           </div>
         </form>
+
+        {/* ACCIONES FINALES */}
+        <div className="p-8 border-t flex gap-4 bg-transparent" style={{ borderColor: 'var(--border-theme)' }}>
+          <button type="button" onClick={onClose} className="flex-1 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] border-2 transition-all hover:bg-red-500/10 hover:text-red-500"
+                  style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}>
+            Descartar
+          </button>
+          <button 
+            type="submit" 
+            onClick={handleFormSubmit}
+            className="flex-1 py-5 rounded-2xl bg-blue-600 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:bg-blue-500 transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            <Save size={16} />
+            {isCreating ? 'Finalizar Creación' : 'Aplicar Cambios'}
+          </button>
+        </div>
       </div>
     </div>
   );
