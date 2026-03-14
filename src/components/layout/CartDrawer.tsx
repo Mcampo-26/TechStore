@@ -3,13 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { 
   X, ShoppingBag, Trash2, Truck, CreditCard, 
-  ShieldCheck, RotateCcw, CheckCircle2, ChevronLeft 
+  ChevronLeft 
 } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore"; 
 import { useRouter } from "next/navigation";
 
 export const CartDrawer = () => {
-  // 1. TODOS los Hooks primero
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +22,19 @@ export const CartDrawer = () => {
     setMounted(true); 
   }, []);
 
-  // 2. Cálculos de variables
+  // --- SOLUCIÓN AL CONFLICTO ---
+  // Si el drawer está abierto pero el último producto agregado disparó un error 
+  // o si detectamos que se abrió por error durante una validación de stock, lo cerramos.
+  useEffect(() => {
+    if (isDrawerOpen && cart.length > 0) {
+      // Verificamos el stock de los items en el carrito
+      const lastItem = cart[cart.length - 1];
+      if (lastItem && lastItem.stock < 1) {
+        closeDrawer();
+      }
+    }
+  }, [isDrawerOpen, cart, closeDrawer]);
+
   const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const handleCheckout = () => {
@@ -31,13 +42,12 @@ export const CartDrawer = () => {
     setIsLoading(true);
     
     setTimeout(() => {
-      closeDrawer(); // Cerramos el drawer antes de irnos
+      closeDrawer(); 
       router.push("/checkout");
       setIsLoading(false);
     }, 1500);
   };
 
-  // 3. RETORNO CONDICIONAL (Solo después de declarar todos los hooks)
   if (!mounted) return null;
 
   return (
@@ -77,7 +87,6 @@ export const CartDrawer = () => {
             </div>
           ) : (
             <>
-              {/* Lista de productos */}
               <div className="space-y-4">
                 {cart.map((item) => (
                   <div key={item.id} className="flex gap-4 p-5 rounded-[2rem] border transition-all shadow-sm min-h-[150px]"
@@ -113,7 +122,6 @@ export const CartDrawer = () => {
                 ))}
               </div>
 
-              {/* Beneficios */}
               <div className="space-y-3 px-2 text-[10px] font-black uppercase tracking-wider">
                 <div className="flex items-center gap-4 p-4 rounded-3xl border" style={{ backgroundColor: 'var(--nav-bg)', borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}>
                   <Truck size={20} className="text-blue-600" />
@@ -128,7 +136,7 @@ export const CartDrawer = () => {
           )}
         </div>
 
-        {/* Footer con el botón pedido */}
+        {/* Footer */}
         <div className="p-8 border-t space-y-4" style={{ borderColor: 'var(--border-theme)', backgroundColor: 'var(--card-bg)' }}>
           <div className="flex justify-between items-end mb-4">
              <div>
