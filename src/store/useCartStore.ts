@@ -22,8 +22,8 @@ interface CartState {
   addToCart: (product: any, userId?: string) => Promise<void>;
   removeFromCart: (productId: string, userId?: string) => Promise<void>;
   updateQuantity: (productId: string, newQuantity: number, userId?: string) => Promise<void>;
-  // AGREGAMOS ESTA LÍNEA PARA SOLUCIONAR EL ERROR DEL BUILD
-  revalidateCartStock: (products: any[]) => void; 
+  // El "?" hace que el argumento sea opcional para que revalidateCartStock() no de error
+  revalidateCartStock: (products?: any[]) => void; 
 }
 
 export const useCartStore = create<CartState>()(
@@ -36,8 +36,10 @@ export const useCartStore = create<CartState>()(
       closeDrawer: () => set({ isDrawerOpen: false }),
       setCart: (newCart) => set({ cart: newCart }),
 
-      // Implementamos la función que pide la página de carrito
       revalidateCartStock: (allProducts) => {
+        // Si no hay productos para validar, salimos de la función
+        if (!allProducts || allProducts.length === 0) return;
+
         const currentCart = get().cart;
         const updatedCart = currentCart.map(item => {
           const freshProduct = allProducts.find(p => (p.id || p._id) === item.id);

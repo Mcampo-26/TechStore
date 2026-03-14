@@ -95,13 +95,9 @@ export default function CarritoPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => { 
-    setIsMounted(true); 
-  }, []);
-
   useEffect(() => {
     if (isMounted && products.length > 0) {
-      revalidateCartStock();
+      revalidateCartStock(products); // <--- Asegúrate de pasar 'products' aquí
     }
   }, [isMounted, user, products, revalidateCartStock]);
 
