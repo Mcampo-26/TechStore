@@ -1,4 +1,3 @@
-// @/store/useCartStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import Swal from 'sweetalert2';
@@ -19,10 +18,10 @@ interface CartState {
   openDrawer: () => void;
   closeDrawer: () => void;
   setCart: (newCart: CartItem[]) => void;
+  clearCart: () => void; 
   addToCart: (product: any, userId?: string) => Promise<void>;
   removeFromCart: (productId: string, userId?: string) => Promise<void>;
   updateQuantity: (productId: string, newQuantity: number, userId?: string) => Promise<void>;
-  // El "?" hace que el argumento sea opcional para que revalidateCartStock() no de error
   revalidateCartStock: (products?: any[]) => void; 
 }
 
@@ -35,15 +34,14 @@ export const useCartStore = create<CartState>()(
       openDrawer: () => set({ isDrawerOpen: true }),
       closeDrawer: () => set({ isDrawerOpen: false }),
       setCart: (newCart) => set({ cart: newCart }),
+      clearCart: () => set({ cart: [] }),
 
       revalidateCartStock: (allProducts) => {
-        // Si no hay productos para validar, salimos de la función
         if (!allProducts || allProducts.length === 0) return;
-
         const currentCart = get().cart;
         const updatedCart = currentCart.map(item => {
           const freshProduct = allProducts.find(p => (p.id || p._id) === item.id);
-          return freshProduct ? { ...item, stock: freshProduct.stock } : item;
+          return freshProduct ? { ...item, stock: Number(freshProduct.stock) } : item;
         });
         set({ cart: updatedCart });
       },

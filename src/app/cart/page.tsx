@@ -16,6 +16,15 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   const price = Number(item.price) || 0;
   const quantity = Number(item.quantity) || 0;
   const stock = Number(item.stock) || 0;
+  const [isMounted, setIsMounted] = useState(false); // <--- Esto estaba bien
+  const [isLoading, setIsLoading] = useState(false);
+
+
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
 
   const handleIncrease = () => {
     if (quantity >= stock) {
