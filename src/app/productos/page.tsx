@@ -5,12 +5,18 @@ import { Search, FilterX } from 'lucide-react';
 import { ProductCard } from '@/components/products/ProductCard';
 import { useProductStore } from '@/store/useProductStore';
 import { Product } from '@/types';
-import { useSearchParams } from 'next/navigation'; // <--- Importante
+import { useSearchParams } from 'next/navigation';
 
-// En Next.js, cuando usas useSearchParams es obligatorio envolver en Suspense
 export default function ProductosPage() {
   return (
-    <Suspense fallback={<div className="pt-32 text-center text-gray-500">Cargando buscador...</div>}>
+    <Suspense 
+      fallback={
+        <div className="min-h-screen pt-32 text-center transition-colors duration-300"
+             style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
+          Cargando buscador...
+        </div>
+      }
+    >
       <ProductosContent />
     </Suspense>
   );
@@ -20,7 +26,6 @@ function ProductosContent() {
   const { products, setProducts, isLoading, setLoading } = useProductStore();
   const [searchTerm, setSearchTerm] = useState('');
   
-  // 1. Obtener la categoría de la URL (?categoria=Celulares)
   const searchParams = useSearchParams();
   const categoriaURL = searchParams.get('categoria');
 
@@ -35,12 +40,8 @@ function ProductosContent() {
       .catch(() => setLoading(false));
   }, [setProducts, setLoading]);
 
-  // 2. LÓGICA DE FILTRADO DOBLE (Nombre + Categoría)
   const filtered = products.filter((p: Product) => {
-    // Filtro por nombre
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Filtro por categoría (si no hay categoría en URL, pasan todos)
     const matchesCategory = categoriaURL 
       ? p.category?.toLowerCase() === categoriaURL.toLowerCase() 
       : true;
@@ -49,35 +50,46 @@ function ProductosContent() {
   });
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] pt-28 pb-12 px-4">
+    <div className="min-h-screen pt-28 pb-12 px-4 transition-colors duration-300"
+         style={{ backgroundColor: 'var(--background)' }}>
+      
       <div className="max-w-7xl mx-auto">
         
         {/* CABECERA Y BUSCADOR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">
+            <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
               {categoriaURL ? `Categoría: ${categoriaURL}` : "Todos los productos"}
             </h1>
             {categoriaURL && (
-               <p className="text-sm text-gray-500">Los mejores productos </p>
+               <p className="text-sm opacity-60" style={{ color: 'var(--foreground)' }}>
+                 Los mejores productos seleccionados
+               </p>
             )}
           </div>
           
           <div className="relative w-full md:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" 
+                    size={18} 
+                    style={{ color: 'var(--foreground)' }} />
             <input 
               type="text"
               placeholder="Buscar en esta sección..."
-              className="w-full p-3 pl-10 rounded-lg border border-gray-200 outline-none focus:ring-2 focus:ring-[#3483fa] bg-white"
+              className="w-full p-3 pl-10 rounded-xl border outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              style={{ 
+                backgroundColor: 'var(--card-bg)', 
+                borderColor: 'var(--border-theme)',
+                color: 'var(--foreground)' 
+              }}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
           </div>
         </div>
 
         {/* GRID DE PRODUCTOS */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3483fa]"></div>
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
           <>
@@ -88,15 +100,19 @@ function ProductosContent() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                <FilterX className="mx-auto text-gray-300 mb-4" size={48} />
-                <h2 className="text-xl font-bold text-gray-700">No hay resultados</h2>
-                <p className="text-gray-400 mt-2">
+              <div className="text-center py-20 rounded-[2rem] border border-dashed transition-colors"
+                   style={{ 
+                     backgroundColor: 'var(--card-bg)', 
+                     borderColor: 'var(--border-theme)' 
+                   }}>
+                <FilterX className="mx-auto mb-4 opacity-20" size={48} style={{ color: 'var(--foreground)' }} />
+                <h2 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>No hay resultados</h2>
+                <p className="opacity-50 mt-2" style={{ color: 'var(--foreground)' }}>
                   No encontramos productos en {categoriaURL || "la tienda"} que coincidan con "{searchTerm}"
                 </p>
                 <button 
                   onClick={() => window.location.href = '/productos'}
-                  className="mt-6 text-[#3483fa] font-bold hover:underline"
+                  className="mt-6 text-blue-600 font-bold hover:underline"
                 >
                   Ver todos los productos
                 </button>
