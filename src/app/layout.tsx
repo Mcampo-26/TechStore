@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/layout/CartDrawer";
 import { getCategoriesServer } from "@/lib/products-server";
+import { Metadata, Viewport } from "next"; // Importamos tipos para SEO
 
 const geistSans = Geist({ 
   variable: "--font-geist-sans", 
@@ -19,8 +20,27 @@ const geistMono = Geist_Mono({
   preload: true 
 });
 
+// --- CONFIGURACIÓN DE SEO (Sube el puntaje a 100) ---
+export const metadata: Metadata = {
+  title: "TechStore | Lo mejor en Tecnología y Computación",
+  description: "Descubre nuestro catálogo de productos de alta tecnología, audio y componentes de PC con envío a todo el país.",
+  keywords: ["tecnología", "ecommerce", "computación", "audio", "tech store"],
+  authors: [{ name: "TechStore Team" }],
+  openGraph: {
+    title: "TechStore | Tu tienda de tecnología",
+    description: "Equípate con lo mejor. Descuentos exclusivos en nuestra tienda online.",
+    type: "website",
+  },
+};
+
+// --- OPTIMIZACIÓN DE VIEWPORT ---
+export const viewport: Viewport = {
+  themeColor: "#3483fa", // El color azul de tu marca para la barra del navegador
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Obtenemos las categorías directamente desde la base de datos (Server Side)
   const categories = await getCategoriesServer();
 
   return (
@@ -28,12 +48,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body 
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen font-sans`}
       >
-        {/* Pasamos las categorías al Navbar como props */}
+        {/* Skip to content: Mejora la accesibilidad para lectores de pantalla */}
+        <a href="#main-content" className="sr-only focus:not-sr-only p-4 bg-blue-600 text-white text-center">
+          Saltar al contenido principal
+        </a>
+
         <Navbar categories={categories} />
-        
         <CartDrawer />
 
-        <main className="flex-1">
+        <main id="main-content" className="flex-1">
           {children}
         </main>
 

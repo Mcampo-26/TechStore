@@ -54,7 +54,7 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
     if (!hasStock) return;
     setIsBuyingNow(true);
     const userId = user?.id || (user as any)?._id;
-    addToCart({ ...product, price: precioFinal }, userId);
+    
     setTimeout(() => router.push("/checkout"), 800);
   };
 
@@ -114,9 +114,21 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
               <div className="space-y-4 mb-8">
                 {isLoggedIn ? (
                   <>
-                    <button onClick={handleBuyNow} disabled={isBuyingNow || !hasStock} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-500 transition-all flex items-center justify-center disabled:opacity-50 shadow-lg active:scale-95">
-                      {isBuyingNow ? "Procesando..." : "Comprar ahora"}
-                    </button>
+                    <button 
+      onClick={handleBuyNow} 
+      disabled={isBuyingNow || !hasStock} 
+      aria-label="Comprar este producto ahora" // Mejora tu accesibilidad (SEO)
+      className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-500 transition-all flex items-center justify-center disabled:opacity-50 shadow-lg active:scale-95"
+    >
+      {isBuyingNow ? (
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <span>Procesando...</span>
+        </div>
+      ) : (
+        "Comprar ahora"
+      )}
+    </button>
                     <button onClick={handleAddToCart} disabled={!hasStock} className="w-full py-5 rounded-2xl font-bold text-sm tracking-widest uppercase flex items-center justify-center gap-3 border-2 border-[var(--border-theme)] text-[var(--foreground)] hover:bg-blue-600 hover:text-white transition-all">
                       <ShoppingCart size={18} /> {!hasStock ? 'Sin Stock' : 'Agregar al carrito'}
                     </button>
