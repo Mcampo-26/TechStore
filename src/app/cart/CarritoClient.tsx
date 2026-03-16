@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image"; // <--- Importamos Image
 import { AiOutlinePlus, AiOutlineMinus } from "react-icons/ai";
 import { ShoppingBag, Trash2, AlertTriangle } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
@@ -14,7 +15,7 @@ interface Props {
   initialProducts: Product[];
 }
 
-// --- SUB-COMPONENTE DE FILA (Igual al tuyo) ---
+// --- SUB-COMPONENTE DE FILA OPTIMIZADO ---
 const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   const [showError, setShowError] = useState(false);
   const price = Number(item.price) || 0;
@@ -33,16 +34,25 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   return (
     <div className="p-4 rounded-xl shadow-sm flex items-center gap-4 border transition-all duration-300"
          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
-      <div className="bg-white p-2 rounded-lg w-24 h-24 flex items-center justify-center shrink-0">
-        <img src={item.image} alt={item.name} className="max-h-full object-contain" />
+      
+      {/* IMAGEN OPTIMIZADA */}
+      <div className="relative bg-white p-2 rounded-lg w-24 h-24 flex items-center justify-center shrink-0 overflow-hidden">
+        <Image 
+          src={item.image} 
+          alt={item.name} 
+          fill
+          sizes="96px" // El contenedor es w-24 (96px)
+          className="object-contain p-2"
+        />
       </div>
+
       <div className="flex-grow">
         <h3 className="font-medium text-sm md:text-base line-clamp-1" style={{ color: 'var(--foreground)' }}>{item.name}</h3>
         <div className="flex items-center justify-between mt-4">
           <div className="relative">
             {showError && (
-              <div className="absolute -top-10 left-0 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-bounce flex items-center gap-1 z-10 font-bold whitespace-nowrap">
-                <AlertTriangle size={10} /> Solo hay {stock} disponibles
+              <div className="absolute top-10 left-0 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-bounce flex items-center gap-1 z-10 font-bold whitespace-nowrap">
+                <AlertTriangle size={25} /> Solo hay {stock} disponibles
               </div>
             )}
             <div className={`flex items-center border rounded-lg overflow-hidden transition-all ${showError ? 'animate-shake border-red-500' : ''}`}
@@ -78,7 +88,6 @@ export default function CarritoClient({ initialProducts }: Props) {
 
   useEffect(() => {
     setHydrated(true);
-    // Sincronizamos el store de productos con la data fresca del servidor
     if (initialProducts) {
       setProducts(initialProducts);
       revalidateCartStock(initialProducts);

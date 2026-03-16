@@ -179,7 +179,7 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
                       className="w-full py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 border-2 transition-all hover:bg-blue-600 hover:text-white"
                       style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
                     >
-                      <ShoppingCart size={20} /> {!hasStock ? 'Sin Stock' : 'Al Carrito'}
+                      <ShoppingCart size={20} /> {!hasStock ? 'Sin Stock' : 'Agregarr al Carrito'}
                     </button>
                   </>
                 ) : (
