@@ -10,7 +10,8 @@ interface CategoryState {
   categories: Category[];
   isLoading: boolean;
   setCategories: (categories: Category[]) => void;
-  addCategoryLocal: (category: Category) => void;
+  fetchCategories: () => Promise<void>; // Lo que pedía el Modal
+  addCategory: (category: Category) => void; // Nombre estándar para el Modal
   setLoading: (status: boolean) => void;
 }
 
@@ -18,25 +19,35 @@ export const useCategoryStore = create<CategoryState>((set) => ({
   categories: [],
   isLoading: false,
 
-  // Sincroniza y normaliza datos del servidor
   setCategories: (categories) => {
-    // Usamos un Map interno momentáneo para asegurar IDs únicos
     const normalized = categories.map(c => ({
       ...c,
-      id: String(c._id || c.id) // Aseguramos que el ID sea string
+      id: String(c._id || c.id)
     }));
-    
     set({ categories: normalized, isLoading: false });
   },
 
-  // Agrega una categoría al estado local (Optimistic Update)
-  addCategoryLocal: (newCat) => set((state) => {
-    const normalizedCat = { ...newCat, id: String(newCat._id || newCat.id) };
-    
-    // Evitamos duplicados por si la API responde lento y el usuario clickea dos veces
-    const exists = state.categories.some(c => c.id === normalizedCat.id);
-    if (exists) return state;
+  fetchCategories: async () => {
+    set({ isLoading: true });
+    try {
+      // Importante: Esto asume que tienes una ruta api/categories/route.ts
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      const normalized = data.map((c: any) => ({ 
+        ...c, 
+        id: String(c._id || c.id) 
+      }));
+      set({ categories: normalized, isLoading: false });
+    } catch (error) {
+      console.error("Error al refrescar categorías:", error);
+      set({ isLoading: false });
+    }
+  },
 
+  addCategory: (newCat) => set((state) => {
+    const normalizedCat = { ...newCat, id: String(newCat._id || newCat.id) };
+    if (state.categories.some(c => c.id === normalizedCat.id)) return state;
+    
     return { 
       categories: [...state.categories, normalizedCat].sort((a, b) => a.name.localeCompare(b.name)) 
     };
