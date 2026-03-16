@@ -21,6 +21,7 @@ export const EditProductModal = ({
   onUpdate,
   isCreating = false
 }: EditProductModalProps) => {
+  // Sincronizamos con los nombres exactos de tu Store corregido
   const { categories, fetchCategories, addCategory } = useCategoryStore();
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCatName, setNewCatName] = useState("");
@@ -45,13 +46,26 @@ export const EditProductModal = ({
     }
   };
 
+  // --- CORRECCIÓN DEL ERROR DE TYPE (Línea 50) ---
   const handleAddNewCategory = async () => {
     if (!newCatName.trim()) return;
-    const savedCategory = await addCategory(newCatName);
-    if (savedCategory) {
-      setProduct({ ...product, category: savedCategory.name });
+    
+    // Creamos el objeto temporal que espera Zustand/TypeScript
+    const tempCategory = {
+      id: Date.now().toString(), // ID temporal
+      name: newCatName.trim()
+    };
+
+    try {
+      // Llamamos a addCategory enviando el OBJETO, no el string
+      await addCategory(tempCategory);
+      
+      // Actualizamos el producto con el nombre de la nueva categoría
+      setProduct({ ...product, category: tempCategory.name });
       setIsAddingNew(false);
       setNewCatName("");
+    } catch (error) {
+      console.error("Error al guardar categoría:", error);
     }
   };
 
@@ -63,7 +77,6 @@ export const EditProductModal = ({
     borderColor: isDarkMode ? "#374151" : "#e2e8f0",
   };
 
-  // SOLUCIÓN AL ERROR: Separamos 'border' en sus propiedades individuales
   const inputStyle = {
     backgroundColor: theme.inputBg,
     color: theme.textColor,
@@ -73,7 +86,7 @@ export const EditProductModal = ({
     borderRadius: '16px',
     padding: '14px 18px',
     width: '100%',
-    fontWeight: '600',
+    fontWeight: '600' as const,
     outline: 'none',
     transition: 'all 0.2s'
   };
@@ -135,8 +148,8 @@ export const EditProductModal = ({
                     color: '#fff', 
                     borderColor: 'rgba(255,255,255,0.2)'
                   }} 
-                  value={product.descuentoPorcentaje || ""}
-                  onChange={(e) => setProduct({ ...product, descuentoPorcentaje: Number(e.target.value) })}
+                  value={product.descuento || ""}
+                  onChange={(e) => setProduct({ ...product, descuento: Number(e.target.value) })}
                 />
               </div>
             )}
@@ -155,7 +168,7 @@ export const EditProductModal = ({
                   <select style={inputStyle} value={product.category || ""} onChange={handleCategoryChange}>
                     <option value="" style={{color: '#000'}}>Seleccionar...</option>
                     {categories.map((cat: any) => (
-                      <option key={cat._id} value={cat.name} style={{color: '#000'}}>{cat.name}</option>
+                      <option key={cat.id || cat._id} value={cat.name} style={{color: '#000'}}>{cat.name}</option>
                     ))}
                     <option value="NEW_CATEGORY" style={{color: '#3483fa', fontWeight: 'bold'}}>+ Crear Nueva</option>
                   </select>
@@ -194,6 +207,7 @@ export const EditProductModal = ({
             Cancelar
           </button>
           <button 
+            type="button"
             onClick={onUpdate}
             className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-[#3483fa] text-white shadow-xl shadow-blue-500/20 hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
           >
