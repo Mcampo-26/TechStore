@@ -1,18 +1,15 @@
 export interface Product {
-  _id: string;      // Obligatorio para MongoDB
-  id?: string;      // Opcional para compatibilidad en Frontend
+  _id: string;
+  id?: string; // Para compatibilidad
   name: string;
-  description: string;
   price: number;
-  image: string;    // Imagen principal
-  // --- AGREGA ESTAS LÍNEAS AQUÍ ---
-  image2?: string;  // Segunda imagen opcional
-  image3?: string;  // Tercera imagen opcional
-  descuentoPorcentaje?: number; // Porcentaje de oferta
-  // --------------------------------
+  image: string;
+  image2?: string;
+  image3?: string;
+  category: string;
+  description: string;
   stock: number;
-  category?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  isOferta?: boolean; 
+  isOferta?: boolean | string; // Lo recibimos a veces como string de la DB
+  descuento?: number;          // <--- AGREGA ESTA LÍNEA
+  descuentoPorcentaje?: number; // Por si usas este nombre también
 }
