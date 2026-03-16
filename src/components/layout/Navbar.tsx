@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { ShoppingCart, LogOut, User, Laptop, Menu, X, ShieldCheck, ChevronDown, Sun, Moon } from 'lucide-react'; 
+import { ShoppingCart, LogOut, User, Laptop, Menu, X, ShieldCheck, ChevronDown, Sun, Moon, LayoutDashboard } from 'lucide-react'; 
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
@@ -15,7 +15,7 @@ interface NavbarProps {
 export const Navbar = ({ categories }: NavbarProps) => {
   const router = useRouter();
   const cart = useCartStore((state) => state.cart);
-  const { isLoggedIn, logout } = useAuthStore();
+  const { isLoggedIn, logout, user } = useAuthStore(); // Traemos 'user' para validar rol si fuera necesario
   
   const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -107,7 +107,6 @@ export const Navbar = ({ categories }: NavbarProps) => {
                   {categories.map((cat: any) => (
                     <Link 
                       key={cat._id} 
-                      // USAR ENCODE PARA SEGURIDAD EN URLS
                       href={`/productos?categoria=${encodeURIComponent(cat.name)}`} 
                       className="block px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-tight transition-all border border-transparent hover:border-blue-600/30 hover:bg-blue-600/10 hover:text-blue-600 dark:hover:text-blue-500" 
                       style={{ color: 'var(--foreground)' }}
@@ -119,11 +118,12 @@ export const Navbar = ({ categories }: NavbarProps) => {
               </div>
             </li>
 
+            {/* BOTÓN ADMIN DESKTOP */}
             {mounted && isLoggedIn && (
               <li>
                 <Link 
                   href="/admin" 
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[10px] font-black uppercase tracking-tighter bg-blue-600/10 text-blue-600 border-blue-600/20 hover:bg-blue-600 hover:text-white"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[10px] font-black uppercase tracking-tighter bg-amber-500/10 text-amber-600 border-amber-600/20 hover:bg-amber-600 hover:text-white"
                 >
                   <ShieldCheck size={14} />
                   Panel Admin
@@ -187,17 +187,53 @@ export const Navbar = ({ categories }: NavbarProps) => {
           className={`absolute right-0 top-0 h-full w-[300px] shadow-2xl transition-transform duration-500 p-8 flex flex-col gap-6 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'} glass-effect`}
           style={{ backgroundColor: 'var(--card-bg)' }}
         >
-          {/* ... Contenido del menú móvil igual, pero usando encodeURIComponent en los links ... */}
-          {categories.map((cat: any) => (
-            <Link 
-              key={cat._id} 
-              href={`/productos?categoria=${encodeURIComponent(cat.name)}`} 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="..."
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-xs font-black uppercase tracking-widest text-blue-600">Menú</span>
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2"><X size={24} style={{ color: 'var(--foreground)' }} /></button>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-black uppercase tracking-widest" style={{ color: 'var(--foreground)' }}>Inicio</Link>
+            
+            <div className="h-px w-full bg-gray-500/10" />
+
+            {/* BOTÓN ADMIN MOBILE */}
+            {mounted && isLoggedIn && (
+              <Link 
+                href="/admin" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 text-amber-600 border border-amber-600/20 text-xs font-black uppercase tracking-widest"
+              >
+                <LayoutDashboard size={20} />
+                Panel de Control
+              </Link>
+            )}
+
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mt-4">Categorías</span>
+            <div className="grid grid-cols-1 gap-2">
+              {categories.map((cat: any) => (
+                <Link 
+                  key={cat._id} 
+                  href={`/productos?categoria=${encodeURIComponent(cat.name)}`} 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-3 rounded-xl border border-transparent hover:border-blue-600/30 hover:bg-blue-600/5 text-[11px] font-bold uppercase transition-all"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  {cat.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Logout Mobile */}
+          {mounted && isLoggedIn && (
+            <button 
+              onClick={handleLogout}
+              className="mt-auto flex items-center justify-center gap-2 p-4 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 font-black uppercase text-xs tracking-widest"
             >
-              {cat.name}
-            </Link>
-          ))}
+              <LogOut size={18} /> Cerrar Sesión
+            </button>
+          )}
         </div>
       </div>
 
