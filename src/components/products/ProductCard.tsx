@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image'; // Importación vital
 import { ShoppingCart, Zap, ChevronRight } from 'lucide-react';
 import { Product } from '@/types';
 import { useCartStore } from '@/store/useCartStore';
@@ -55,16 +56,19 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
       {/* SECCIÓN DE IMAGEN */}
       <div className="relative p-3">
         {tieneDescuento && (
-          <div className="absolute top-5 left-5 z-10 bg-blue-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-lg shadow-blue-500/30">
+          <div className="absolute top-5 left-5 z-20 bg-blue-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-lg shadow-blue-500/30">
             { (product as any).descuento }% OFF
           </div>
         )}
 
-        <Link href={`/productos/${product._id}`} className="block aspect-[4/3] rounded-2xl overflow-hidden bg-white p-4">
-          <img
+        <Link href={`/productos/${product._id}`} className="relative block aspect-[4/3] rounded-2xl overflow-hidden bg-white p-4">
+          <Image
             src={currentImg}
-            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
             alt={product.name}
+            fill // Hace que la imagen llene el contenedor aspect-[4/3]
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            priority={true} // Prioriza la carga para mejorar el LCP de la auditoría
+            className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
           />
         </Link>
       </div>
@@ -72,17 +76,23 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
       {/* CUERPO DE LA TARJETA */}
       <div className="px-5 pb-5 flex flex-col flex-grow">
         
-        {/* MINIATURAS (usando variables de fondo) */}
+        {/* MINIATURAS OPTIMIZADAS (El gran ahorro de datos) */}
         <div className="flex gap-1.5 mb-4 justify-start">
           {images.length > 1 && images.map((img, i) => (
             <button
               key={i}
               onMouseEnter={() => setCurrentImg(img)}
-              className={`w-9 h-9 rounded-lg border transition-all p-1 bg-white ${
+              className={`relative w-9 h-9 rounded-lg border transition-all p-1 bg-white overflow-hidden ${
                 currentImg === img ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-transparent opacity-40'
               }`}
             >
-              <img src={img} className="w-full h-full object-contain" alt="thumb" />
+              <Image 
+                src={img} 
+                alt={`thumb-${i}`} 
+                fill
+                sizes="40px" // Aquí le decimos que solo baje una imagen de 40px
+                className="object-contain p-0.5"
+              />
             </button>
           ))}
         </div>
@@ -112,7 +122,7 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
           </div>
         </Link>
 
-        {/* BOTONES (respetando estilos de sistema) */}
+        {/* BOTONES */}
         <div className="mt-2">
           {showAddButton ? (
             <button
