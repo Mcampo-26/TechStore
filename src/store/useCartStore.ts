@@ -22,7 +22,7 @@ interface CartState {
   addToCart: (product: any, userId?: string) => Promise<void>;
   removeFromCart: (productId: string, userId?: string) => Promise<void>;
   updateQuantity: (productId: string, newQuantity: number, userId?: string) => Promise<void>;
-  revalidateCartStock: (products?: any[]) => void;
+  revalidateCartStock: (allProducts?: any[]) => void;
   syncWithDB: (userId: string, cart: CartItem[]) => Promise<void>;
 }
 
@@ -37,8 +37,9 @@ export const useCartStore = create<CartState>()(
       setCart: (newCart) => set({ cart: newCart }),
       clearCart: () => set({ cart: [] }),
 
-      // Función de sincronización interna
+      // 1. SINCRONIZACIÓN CON MONGODB
       syncWithDB: async (userId, cart) => {
+        if (!userId) return;
         try {
           await fetch("/api/cart/sync", {
             method: "POST",
@@ -46,31 +47,50 @@ export const useCartStore = create<CartState>()(
             body: JSON.stringify({ userId, cart }),
           });
         } catch (error) {
-          console.error("Error en Sync automático:", error);
+          console.error("Error sincronizando carrito con DB:", error);
         }
       },
 
+      // 2. REVALIDACIÓN DE STOCK (Crucial para el CarritoPage)
       revalidateCartStock: (allProducts) => {
         if (!allProducts || allProducts.length === 0) return;
+        
         const currentCart = get().cart;
         const updatedCart = currentCart.map(item => {
-          const freshProduct = allProducts.find(p => (p.id || p._id) === item.id);
-          return freshProduct ? { ...item, stock: Number(freshProduct.stock) } : item;
+          // Buscamos el producto fresco que viene del servidor
+          const fresh = allProducts.find(p => (p._id || p.id) === item.id);
+          
+          if (fresh) {
+            const freshStock = Number(fresh.stock);
+            // Si el stock actual es menor a lo que el usuario quiere comprar, lo bajamos al máximo disponible
+            const adjustedQuantity = item.quantity > freshStock ? freshStock : item.quantity;
+            
+            return { 
+              ...item, 
+              price: Number(fresh.price), // Actualizamos precio por si cambió
+              stock: freshStock,
+              quantity: adjustedQuantity > 0 ? adjustedQuantity : 1
+            };
+          }
+          return item;
         });
+
         set({ cart: updatedCart });
       },
 
+      // 3. AGREGAR AL CARRITO
       addToCart: async (product, userId) => {
-        const productId = product.id || product._id;
+        const productId = product._id || product.id;
         const currentCart = get().cart;
         const existing = currentCart.find((item) => item.id === productId);
         const availableStock = Number(product.stock);
 
+        // Si ya no hay stock disponible
         if (existing && existing.quantity >= availableStock) {
           set({ isDrawerOpen: false });
           Swal.fire({
-            title: '¡LÍMITE ALCANZADO!',
-            text: 'Has alcanzado el stock máximo disponible.',
+            title: '¡LÍMITE DE STOCK!',
+            text: `Solo quedan ${availableStock} unidades disponibles.`,
             icon: 'warning',
             confirmButtonText: 'ENTENDIDO',
             buttonsStyling: false,
@@ -90,10 +110,10 @@ export const useCartStore = create<CartState>()(
         } else {
           updatedCart = [...currentCart, {
             id: productId,
-            name: product.name || "Producto",
+            name: product.name,
             description: product.description || "",
-            price: Number(product.price) || 0,
-            image: product.image || "/placeholder.png",
+            price: Number(product.price),
+            image: product.image,
             quantity: 1,
             stock: availableStock,
           }];
@@ -103,20 +123,25 @@ export const useCartStore = create<CartState>()(
         if (userId) get().syncWithDB(userId, updatedCart);
       },
 
+      // 4. QUITAR DEL CARRITO
       removeFromCart: async (productId, userId) => {
         const updatedCart = get().cart.filter((item) => item.id !== productId);
         set({ cart: updatedCart });
         if (userId) get().syncWithDB(userId, updatedCart);
       },
 
+      // 5. ACTUALIZAR CANTIDAD (+ o -)
       updateQuantity: async (productId, newQuantity, userId) => {
         const currentCart = get().cart;
         const item = currentCart.find(i => i.id === productId);
 
-        if (item && newQuantity > item.stock) return;
+        if (!item) return;
 
-        const updatedCart = currentCart.map((item) =>
-          item.id === productId ? { ...item, quantity: Math.max(1, newQuantity) } : item
+        // Si intenta subir más del stock, lo frenamos en el stock máximo
+        const validatedQuantity = newQuantity > item.stock ? item.stock : Math.max(1, newQuantity);
+
+        const updatedCart = currentCart.map((it) =>
+          it.id === productId ? { ...it, quantity: validatedQuantity } : it
         );
 
         set({ cart: updatedCart });
@@ -125,6 +150,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'cart-storage',
+      // Solo persistimos el array 'cart', los estados de UI como 'isDrawerOpen' no.
       partialize: (state) => ({ cart: state.cart }),
     }
   )

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingCart, Eye, Zap } from 'lucide-react';
 import { Product } from '@/types';
@@ -15,6 +15,12 @@ interface ProductCardProps {
 export const ProductCard = ({ product, showAddButton = false }: ProductCardProps) => {
   const addToCart = useCartStore((state) => state.addToCart);
   const [currentImg, setCurrentImg] = useState<string>(product.image || "");
+  const [mounted, setMounted] = useState(false);
+
+  // Sincronizamos el montaje para evitar discrepancias de imágenes o estados iniciales
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const images = [product.image, product.image2, product.image3].filter(
     (img): img is string => typeof img === 'string' && img.trim() !== ""
@@ -38,7 +44,6 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
   };
 
   return (
-    /* CAMBIO 1: Quitamos bg-white y usamos var(--card-bg). También borderColor con variable */
     <div 
       className="group rounded-xl border p-4 hover:shadow-2xl transition-all h-full flex flex-col relative overflow-hidden"
       style={{ 
@@ -46,7 +51,6 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
         borderColor: 'var(--border-theme)' 
       }}
     >
-
       {/* BADGE DIAGONAL */}
       {(product as any).isOferta && (
         <div className="absolute top-0 right-0 z-20 pointer-events-none">
@@ -61,7 +65,6 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
       )}
 
       <Link href={`/productos/${product._id}`} className="flex-grow flex flex-col">
-        {/* CAMBIO 2: Mix-blend-multiply a veces ensucia en modo oscuro, lo quitamos si es dark */}
         <div className="relative w-full h-44 flex items-center justify-center mb-2 bg-white rounded-lg p-2">
           <img
             src={currentImg}
@@ -87,20 +90,18 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
         </div>
 
         <div className="space-y-1 mt-auto">
-          {/* CAMBIO 3: Quitamos text-gray-600 para que herede var(--foreground) */}
-          <h3 className="text-sm line-clamp-2 leading-tight min-h-[32px] font-medium">
+          <h3 className="text-sm line-clamp-2 leading-tight min-h-[32px] font-medium" style={{ color: 'var(--foreground)' }}>
             {product.name}
           </h3>
 
           <div className="pt-2 flex flex-col">
             {tieneDescuento && (
-              <span className="text-xs opacity-50 line-through">
+              <span className="text-xs opacity-50 line-through" style={{ color: 'var(--foreground)' }}>
                 $ {precioOriginal.toLocaleString('es-AR')}
               </span>
             )}
             <div className="flex items-center gap-2">
-              {/* CAMBIO 4: Quitamos text-gray-900 */}
-              <span className="text-2xl font-bold">
+              <span className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
                 $ {precioFinal.toLocaleString('es-AR')}
               </span>
               {tieneDescuento && (
@@ -117,24 +118,17 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
         {showAddButton ? (
           <button
             onClick={handleAddClick}
-            className="w-full bg-[#3483fa] text-white py-2.5 rounded-lg font-bold hover:bg-[#2968c8] flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-blue-500/10"
+            className="w-full bg-[#3483fa] text-white py-2.5 rounded-lg font-bold hover:bg-[#2968c8] flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-blue-500/10 cursor-pointer"
           >
             <ShoppingCart size={18} /> Agregar
           </button>
         ) : (
           <Link
-  href={`/productos/${product._id}`}
-  className="w-full py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all text-center border-2 
-             /* MODO CLARO: Borde azul fuerte y texto azul. Fondo blanco para que destaque */
-             bg-white text-blue-600 border-blue-600 
-             hover:bg-blue-600 hover:text-white
-             
-             /* MODO OSCURO: Borde blanco sutil y texto blanco */
-             dark:bg-transparent dark:text-white dark:border-white/20 
-             dark:hover:bg-white dark:hover:text-black"
->
-  <Eye size={18} /> Ver detalles
-</Link>
+            href={`/productos/${product._id}`}
+            className="w-full py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all text-center border-2 bg-white text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white dark:bg-transparent dark:text-white dark:border-white/20 dark:hover:bg-white dark:hover:text-black"
+          >
+            <Eye size={18} /> Ver detalles
+          </Link>
         )}
       </div>
     </div>

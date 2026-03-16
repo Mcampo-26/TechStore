@@ -1,47 +1,46 @@
 import { create } from 'zustand';
 
 interface Category {
-  _id: string;
+  id: string;
+  _id?: string;
   name: string;
 }
 
 interface CategoryState {
   categories: Category[];
-  loading: boolean;
-  fetchCategories: () => Promise<void>;
-  addCategory: (name: string) => Promise<Category | null>;
+  isLoading: boolean;
+  setCategories: (categories: Category[]) => void;
+  addCategoryLocal: (category: Category) => void;
+  setLoading: (status: boolean) => void;
 }
 
-export const useCategoryStore = create<CategoryState>((set, get) => ({
+export const useCategoryStore = create<CategoryState>((set) => ({
   categories: [],
-  loading: false,
-  
-  fetchCategories: async () => {
-    set({ loading: true });
-    try {
-      const res = await fetch('/api/categories');
-      const data = await res.json();
-      set({ categories: data, loading: false });
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      set({ loading: false });
-    }
+  isLoading: false,
+
+  // Sincroniza y normaliza datos del servidor
+  setCategories: (categories) => {
+    // Usamos un Map interno momentáneo para asegurar IDs únicos
+    const normalized = categories.map(c => ({
+      ...c,
+      id: String(c._id || c.id) // Aseguramos que el ID sea string
+    }));
+    
+    set({ categories: normalized, isLoading: false });
   },
 
-  addCategory: async (name: string) => {
-    try {
-      const res = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      const newCat = await res.json();
-      // Actualizamos el estado local inmediatamente
-      set({ categories: [...get().categories, newCat] });
-      return newCat;
-    } catch (error) {
-      console.error("Error adding category:", error);
-      return null;
-    }
-  }
+  // Agrega una categoría al estado local (Optimistic Update)
+  addCategoryLocal: (newCat) => set((state) => {
+    const normalizedCat = { ...newCat, id: String(newCat._id || newCat.id) };
+    
+    // Evitamos duplicados por si la API responde lento y el usuario clickea dos veces
+    const exists = state.categories.some(c => c.id === normalizedCat.id);
+    if (exists) return state;
+
+    return { 
+      categories: [...state.categories, normalizedCat].sort((a, b) => a.name.localeCompare(b.name)) 
+    };
+  }),
+
+  setLoading: (status) => set({ isLoading: status }),
 }));

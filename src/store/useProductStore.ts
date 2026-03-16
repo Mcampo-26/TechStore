@@ -5,61 +5,39 @@ interface ProductState {
   products: Product[];
   currentProduct: Product | null;
   isLoading: boolean;
+  // Acciones
   setProducts: (products: Product[]) => void;
+  setCurrentProduct: (product: Product | null) => void;
   setLoading: (status: boolean) => void;
-  fetchProducts: () => Promise<void>;
-  fetchProductById: (id: string) => Promise<Product | null>;
   updateProductInList: (updatedProduct: Product) => void;
 }
 
-export const useProductStore = create<ProductState>((set, get) => ({
+export const useProductStore = create<ProductState>((set) => ({
   products: [],
   currentProduct: null,
   isLoading: false,
 
-  setProducts: (products) => set({ products }),
+  // Setea la lista completa (ideal para llamar desde el useEffect del listado)
+  setProducts: (products) => set({ 
+    products: products.map((p: any) => ({ ...p, id: p._id || p.id })) 
+  }),
+
+  // Setea el producto actual (ideal para llamar desde el detalle)
+  setCurrentProduct: (product) => set({ 
+    currentProduct: product ? { ...product, id: product._id || product.id } : null 
+  }),
+
   setLoading: (status) => set({ isLoading: status }),
 
-  fetchProducts: async () => {
-    // Si ya tenemos productos, no mostramos el loading agresivo para un mejor UX
-    if (get().products.length === 0) set({ isLoading: true });
-    
-    try {
-      const res = await fetch('/api/products', { cache: 'no-store' });
-      const data = await res.json();
-      // Normalizamos IDs para evitar problemas de undefined.id
-      const normalized = data.map((p: any) => ({ ...p, id: p._id || p.id }));
-      set({ products: normalized });
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  fetchProductById: async (id: string) => {
-    set({ isLoading: true });
-    try {
-      const res = await fetch(`/api/products/${id}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error("Producto no encontrado");
-      
-      const data = await res.json();
-      const normalized = { ...data, id: data._id || data.id };
-      
-      set({ currentProduct: normalized });
-      return normalized;
-    } catch (error) {
-      console.error("Error fetching product:", error);
-      set({ currentProduct: null });
-      return null;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
+  // Útil para actualizar el stock o precio sin recargar la página
   updateProductInList: (updatedProduct) => set((state) => ({
     products: state.products.map((p) => 
       (p._id === updatedProduct._id || p.id === updatedProduct.id) ? updatedProduct : p
-    )
+    ),
+    // Si el producto que actualizamos es el que estamos viendo, también lo actualizamos
+    currentProduct: 
+      (state.currentProduct?._id === updatedProduct._id || state.currentProduct?.id === updatedProduct.id)
+      ? updatedProduct 
+      : state.currentProduct
   })),
 }));
