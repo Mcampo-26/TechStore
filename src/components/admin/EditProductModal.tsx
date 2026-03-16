@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X, Save, PlusCircle, Edit3, Zap } from "lucide-react";
+import { X, Save, PlusCircle, Edit3, Zap, Image as ImageIcon, Check } from "lucide-react";
 import { useCategoryStore } from "@/store/useCategoryStore";
 
 interface EditProductModalProps {
@@ -21,17 +21,14 @@ export const EditProductModal = ({
   onUpdate,
   isCreating = false
 }: EditProductModalProps) => {
-  // Sincronizamos con los nombres exactos de tu Store corregido
   const { categories, fetchCategories, addCategory } = useCategoryStore();
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCatName, setNewCatName] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
       setIsAddingNew(false);
-      setIsDarkMode(document.documentElement.classList.contains('dark'));
     }
   }, [isOpen, fetchCategories]);
 
@@ -46,173 +43,171 @@ export const EditProductModal = ({
     }
   };
 
-  // --- CORRECCIÓN DEL ERROR DE TYPE (Línea 50) ---
-  const handleAddNewCategory = async () => {
+  const handleAddNewCategory = () => { // Quitamos el async
     if (!newCatName.trim()) return;
     
-    // Creamos el objeto temporal que espera Zustand/TypeScript
+    // Creamos el objeto
     const tempCategory = {
-      id: Date.now().toString(), // ID temporal
+      id: Date.now().toString(), 
       name: newCatName.trim()
     };
 
-    try {
-      // Llamamos a addCategory enviando el OBJETO, no el string
-      await addCategory(tempCategory);
-      
-      // Actualizamos el producto con el nombre de la nueva categoría
-      setProduct({ ...product, category: tempCategory.name });
-      setIsAddingNew(false);
-      setNewCatName("");
-    } catch (error) {
-      console.error("Error al guardar categoría:", error);
-    }
+    // Como addCategory es síncrona, se ejecuta al instante
+    addCategory(tempCategory); 
+    
+    // Actualizamos el resto del formulario
+    setProduct({ ...product, category: tempCategory.name });
+    setIsAddingNew(false);
+    setNewCatName("");
+    
+    // Ya no necesitas el try/catch porque no hay peticiones de red aquí
   };
 
-  const theme = {
-    modalBg: isDarkMode ? "#111827" : "#ffffff",
-    inputBg: isDarkMode ? "#1f2937" : "#f8fafc",
-    textColor: isDarkMode ? "#ffffff" : "#0f172a",
-    labelColor: isDarkMode ? "#94a3b8" : "#64748b",
-    borderColor: isDarkMode ? "#374151" : "#e2e8f0",
-  };
-
-  const inputStyle = {
-    backgroundColor: theme.inputBg,
-    color: theme.textColor,
-    borderWidth: '2px',
-    borderStyle: 'solid',
-    borderColor: theme.borderColor,
-    borderRadius: '16px',
-    padding: '14px 18px',
-    width: '100%',
-    fontWeight: '600' as const,
-    outline: 'none',
-    transition: 'all 0.2s'
-  };
+  // Clase reutilizable para inputs que respetan el tema
+  const inputClass = "w-full bg-[var(--card-bg)] text-[var(--foreground)] border-2 border-[var(--border-theme)] rounded-2xl px-5 py-3.5 font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:opacity-30";
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div 
-        style={{ 
-          backgroundColor: theme.modalBg, 
-          borderWidth: '1px', 
-          borderStyle: 'solid', 
-          borderColor: theme.borderColor 
-        }}
-        className="w-full max-w-2xl max-h-[95vh] overflow-hidden flex flex-col rounded-[2.5rem] shadow-2xl"
-      >
-        <div className={`p-8 border-b flex justify-between items-center ${isDarkMode ? 'bg-gray-900/50' : 'bg-slate-50'}`} 
-             style={{ borderColor: theme.borderColor }}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      <div className="w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col rounded-[3rem] shadow-2xl border border-[var(--border-theme)] bg-[var(--background)]">
+        
+        {/* HEADER */}
+        <div className="p-8 border-b border-[var(--border-theme)] flex justify-between items-center bg-[var(--nav-bg)]">
           <div className="flex items-center gap-4">
-            <div className="bg-[#3483fa] p-3 rounded-2xl text-white shadow-lg shadow-blue-500/20">
-              {isCreating ? <PlusCircle size={26} /> : <Edit3 size={26} />}
+            <div className="bg-blue-600 p-3 rounded-2xl text-white shadow-lg shadow-blue-500/30">
+              {isCreating ? <PlusCircle size={24} /> : <Edit3 size={24} />}
             </div>
             <div>
-              <h2 style={{ color: theme.textColor }} className="text-xl font-black uppercase tracking-tight">
+              <h2 className="text-xl font-black uppercase tracking-tight text-[var(--foreground)]">
                 {isCreating ? "Nuevo Producto" : "Editar Producto"}
               </h2>
-              <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Gestión TechStore</p>
+              <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Panel de Control</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-red-500 transition-colors">
-            <X size={30} />
+          <button onClick={onClose} className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-full transition-all text-[var(--foreground)] opacity-50 hover:opacity-100">
+            <X size={28} />
           </button>
         </div>
 
-        <form className="flex-1 overflow-y-auto p-8 space-y-8" onSubmit={(e) => e.preventDefault()}>
-          <div className={`p-6 rounded-3xl border-2 transition-all ${product.isOferta ? 'bg-blue-600 border-blue-400' : isDarkMode ? 'bg-gray-800/40 border-gray-700' : 'bg-slate-50 border-slate-200'}`}>
+        {/* CUERPO DEL FORMULARIO */}
+        <form className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+          
+          {/* SWITCH DE OFERTA */}
+          <div className={`p-6 rounded-[2rem] border-2 transition-all ${product.isOferta ? 'bg-blue-600 border-blue-400 shadow-xl shadow-blue-600/20' : 'bg-[var(--card-bg)] border-[var(--border-theme)]'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Zap size={22} className={product.isOferta ? 'text-white' : 'text-blue-500'} fill={product.isOferta ? "white" : "none"} />
-                <span className={`font-black uppercase text-xs tracking-wider ${product.isOferta ? 'text-white' : isDarkMode ? 'text-gray-200' : 'text-slate-700'}`}>
-                  Oferta Activa
+                <Zap size={20} className={product.isOferta ? 'text-white' : 'text-blue-500'} fill={product.isOferta ? "white" : "none"} />
+                <span className={`font-black uppercase text-[11px] tracking-widest ${product.isOferta ? 'text-white' : 'text-[var(--foreground)]'}`}>
+                  Producto en Oferta
                 </span>
               </div>
               <button 
                 type="button"
                 onClick={() => setProduct({ ...product, isOferta: !product.isOferta })}
-                className={`w-14 h-7 rounded-full relative transition-all ${product.isOferta ? 'bg-white' : 'bg-gray-400'}`}
+                className={`w-14 h-8 rounded-full relative transition-all border-2 ${product.isOferta ? 'bg-white border-transparent' : 'bg-transparent border-[var(--border-theme)]'}`}
               >
-                <div className={`absolute top-1 w-5 h-5 rounded-full transition-all ${product.isOferta ? 'left-8 bg-blue-600' : 'left-1 bg-white'}`} />
+                <div className={`absolute top-1 w-4 h-4 rounded-full transition-all ${product.isOferta ? 'left-8 bg-blue-600' : 'left-1.5 bg-[var(--foreground)] opacity-20'}`} />
               </button>
             </div>
             {product.isOferta && (
-              <div className="mt-6 pt-6 border-t border-white/20">
-                <label className="text-[10px] font-black text-white uppercase mb-2 block tracking-widest">Descuento (%)</label>
-                <input 
-                  type="number" 
-                  style={{
-                    ...inputStyle, 
-                    backgroundColor: 'rgba(255,255,255,0.1)', 
-                    color: '#fff', 
-                    borderColor: 'rgba(255,255,255,0.2)'
-                  }} 
-                  value={product.descuento || ""}
-                  onChange={(e) => setProduct({ ...product, descuento: Number(e.target.value) })}
-                />
+              <div className="mt-6 pt-6 border-t border-white/20 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-white/70 uppercase mb-2 block ml-2">Descuento (%)</label>
+                  <input 
+                    type="number" 
+                    className="w-full bg-white/10 border-2 border-white/20 rounded-xl px-4 py-2.5 text-white font-bold outline-none focus:border-white"
+                    value={product.descuento || ""}
+                    onChange={(e) => setProduct({ ...product, descuento: Number(e.target.value) })}
+                  />
+                </div>
               </div>
             )}
           </div>
 
-          <div className="space-y-6">
-            <div>
-              <label style={{ color: theme.labelColor }} className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest">Nombre del Producto</label>
-              <input type="text" style={inputStyle} value={product.name || ""} onChange={(e) => setProduct({ ...product, name: e.target.value })} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* NOMBRE */}
+            <div className="md:col-span-2">
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Nombre del Producto</label>
+              <input type="text" className={inputClass} value={product.name || ""} onChange={(e) => setProduct({ ...product, name: e.target.value })} placeholder="Ej: Samsung Galaxy S24 Ultra" />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label style={{ color: theme.labelColor }} className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest">Categoría</label>
-                {!isAddingNew ? (
-                  <select style={inputStyle} value={product.category || ""} onChange={handleCategoryChange}>
-                    <option value="" style={{color: '#000'}}>Seleccionar...</option>
-                    {categories.map((cat: any) => (
-                      <option key={cat.id || cat._id} value={cat.name} style={{color: '#000'}}>{cat.name}</option>
-                    ))}
-                    <option value="NEW_CATEGORY" style={{color: '#3483fa', fontWeight: 'bold'}}>+ Crear Nueva</option>
-                  </select>
-                ) : (
-                  <div className="flex gap-2">
-                    <input type="text" style={{...inputStyle, borderColor: '#3483fa'}} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Nueva..." />
-                    <button type="button" onClick={handleAddNewCategory} className="bg-blue-600 text-white px-5 rounded-2xl font-bold">OK</button>
-                  </div>
-                )}
+            {/* CATEGORIA */}
+            <div className="flex flex-col">
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Categoría</label>
+              {!isAddingNew ? (
+                <select className={inputClass} value={product.category || ""} onChange={handleCategoryChange}>
+                  <option value="">Seleccionar...</option>
+                  {categories.map((cat: any) => (
+                    <option key={cat.id || cat._id} value={cat.name}>{cat.name}</option>
+                  ))}
+                  <option value="NEW_CATEGORY" className="text-blue-600 font-bold">+ Crear Nueva...</option>
+                </select>
+              ) : (
+                <div className="flex gap-2">
+                  <input type="text" className={`${inputClass} border-blue-500`} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Nombre..." autoFocus />
+                  <button type="button" onClick={handleAddNewCategory} className="bg-blue-600 text-white px-4 rounded-2xl hover:bg-blue-700 transition-all">
+                    <Check size={20} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* PRECIO */}
+            <div>
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Precio (ARS)</label>
+              <input type="number" className={inputClass} value={product.price || ""} onChange={(e) => setProduct({ ...product, price: Number(e.target.value) })} />
+            </div>
+
+            {/* STOCK */}
+            <div>
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Stock Disponible</label>
+              <input type="number" className={inputClass} value={product.stock ?? ""} onChange={(e) => setProduct({ ...product, stock: Number(e.target.value) })} />
+            </div>
+
+            {/* IMAGEN PRINCIPAL */}
+            <div>
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">URL Imagen 1 (Principal)</label>
+              <div className="relative">
+                <ImageIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20 text-[var(--foreground)]" />
+                <input type="text" className={`${inputClass} pl-12`} value={product.image || ""} onChange={(e) => setProduct({ ...product, image: e.target.value })} />
               </div>
-              <div>
-                <label style={{ color: theme.labelColor }} className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest">Precio ($)</label>
-                <input type="number" style={inputStyle} value={product.price || ""} onChange={(e) => setProduct({ ...product, price: Number(e.target.value) })} />
-              </div>
             </div>
 
-            <div>
-              <label style={{ color: theme.labelColor }} className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest">Stock</label>
-              <input type="number" style={inputStyle} value={product.stock ?? ""} onChange={(e) => setProduct({ ...product, stock: Number(e.target.value) })} />
+            {/* IMAGENES ADICIONALES */}
+            <div className="md:col-span-2 grid grid-cols-2 gap-4">
+               <div>
+                  <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">URL Imagen 2</label>
+                  <input type="text" className={inputClass} value={product.image2 || ""} onChange={(e) => setProduct({ ...product, image2: e.target.value })} />
+               </div>
+               <div>
+                  <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">URL Imagen 3</label>
+                  <input type="text" className={inputClass} value={product.image3 || ""} onChange={(e) => setProduct({ ...product, image3: e.target.value })} />
+               </div>
             </div>
 
-            <div>
-              <label style={{ color: theme.labelColor }} className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest">Descripción</label>
-              <textarea style={{...inputStyle, height: '120px', resize: 'none'}} value={product.description || ""} onChange={(e) => setProduct({ ...product, description: e.target.value })} />
+            {/* DESCRIPCIÓN */}
+            <div className="md:col-span-2">
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Descripción Detallada</label>
+              <textarea className={`${inputClass} h-32 resize-none`} value={product.description || ""} onChange={(e) => setProduct({ ...product, description: e.target.value })} />
             </div>
           </div>
         </form>
 
-        <div className={`p-8 border-t flex gap-4 ${isDarkMode ? 'bg-gray-900/50' : 'bg-slate-50'}`} 
-             style={{ borderColor: theme.borderColor }}>
+        {/* FOOTER ACCIONES */}
+        <div className="p-8 border-t border-[var(--border-theme)] flex gap-4 bg-[var(--nav-bg)]">
           <button 
             type="button" 
             onClick={onClose}
-            className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border-2 transition-all ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+            className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-[var(--border-theme)] text-[var(--foreground)] opacity-50 hover:opacity-100 hover:bg-red-500/5 transition-all"
           >
-            Cancelar
+            Descartar
           </button>
           <button 
             type="button"
             onClick={onUpdate}
-            className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-[#3483fa] text-white shadow-xl shadow-blue-500/20 hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+            className="flex-[2] py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <Save size={18} />
-            {isCreating ? "Guardar" : "Actualizar"}
+            {isCreating ? "Confirmar y Publicar" : "Guardar Cambios"}
           </button>
         </div>
       </div>
