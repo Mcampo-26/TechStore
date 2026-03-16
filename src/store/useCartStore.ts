@@ -18,11 +18,12 @@ interface CartState {
   openDrawer: () => void;
   closeDrawer: () => void;
   setCart: (newCart: CartItem[]) => void;
-  clearCart: () => void; 
+  clearCart: () => void;
   addToCart: (product: any, userId?: string) => Promise<void>;
   removeFromCart: (productId: string, userId?: string) => Promise<void>;
   updateQuantity: (productId: string, newQuantity: number, userId?: string) => Promise<void>;
-  revalidateCartStock: (products?: any[]) => void; 
+  revalidateCartStock: (products?: any[]) => void;
+  syncWithDB: (userId: string, cart: CartItem[]) => Promise<void>;
 }
 
 export const useCartStore = create<CartState>()(
@@ -31,16 +32,23 @@ export const useCartStore = create<CartState>()(
       cart: [],
       isDrawerOpen: false,
 
-      openDrawer: () => {
-        console.log("LOG: openDrawer() llamado manualmente");
-        set({ isDrawerOpen: true });
-      },
-      closeDrawer: () => {
-        console.log("LOG: closeDrawer() llamado");
-        set({ isDrawerOpen: false });
-      },
+      openDrawer: () => set({ isDrawerOpen: true }),
+      closeDrawer: () => set({ isDrawerOpen: false }),
       setCart: (newCart) => set({ cart: newCart }),
       clearCart: () => set({ cart: [] }),
+
+      // Función de sincronización interna
+      syncWithDB: async (userId, cart) => {
+        try {
+          await fetch("/api/cart/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId, cart }),
+          });
+        } catch (error) {
+          console.error("Error en Sync automático:", error);
+        }
+      },
 
       revalidateCartStock: (allProducts) => {
         if (!allProducts || allProducts.length === 0) return;
@@ -53,28 +61,17 @@ export const useCartStore = create<CartState>()(
       },
 
       addToCart: async (product, userId) => {
-        console.log("--- INICIO addToCart ---");
         const productId = product.id || product._id;
-        const currentCart = get().cart; 
+        const currentCart = get().cart;
         const existing = currentCart.find((item) => item.id === productId);
         const availableStock = Number(product.stock);
 
-        console.log("LOG: Producto ID:", productId);
-        console.log("LOG: Stock disponible:", availableStock);
-        console.log("LOG: Cantidad actual en carrito:", existing?.quantity || 0);
-
-        // 1. VALIDACIÓN DE STOCK
         if (existing && existing.quantity >= availableStock) {
-          console.warn("LOG: ¡BLOQUEADO! Stock insuficiente. No debería abrir el Drawer.");
-          
-          // Forzamos el false aquí
           set({ isDrawerOpen: false });
-
           Swal.fire({
             title: '¡LÍMITE ALCANZADO!',
             text: 'Has alcanzado el stock máximo disponible.',
             icon: 'warning',
-            iconColor: '#2563eb',
             confirmButtonText: 'ENTENDIDO',
             buttonsStyling: false,
             customClass: {
@@ -82,13 +79,9 @@ export const useCartStore = create<CartState>()(
               confirmButton: 'px-12 py-5 bg-blue-600 text-white font-black rounded-2xl'
             }
           });
-          
-          console.log("--- FIN addToCart (por error de stock) ---");
-          return; 
+          return;
         }
 
-        // 2. PREPARACIÓN DE DATOS
-        console.log("LOG: Validación pasada. Preparando carrito...");
         let updatedCart: CartItem[];
         if (existing) {
           updatedCart = currentCart.map((item) =>
@@ -106,38 +99,33 @@ export const useCartStore = create<CartState>()(
           }];
         }
 
-        // 3. ACTUALIZACIÓN FINAL
-        console.log("LOG: Seteando cart y isDrawerOpen: true");
-        set({ 
-          cart: updatedCart, 
-          isDrawerOpen: true 
-        });
-        console.log("--- FIN addToCart (Exitoso) ---");
+        set({ cart: updatedCart, isDrawerOpen: true });
+        if (userId) get().syncWithDB(userId, updatedCart);
       },
 
-      removeFromCart: async (productId) => {
-        set({ cart: get().cart.filter((item) => item.id !== productId) });
+      removeFromCart: async (productId, userId) => {
+        const updatedCart = get().cart.filter((item) => item.id !== productId);
+        set({ cart: updatedCart });
+        if (userId) get().syncWithDB(userId, updatedCart);
       },
 
-      updateQuantity: async (productId, newQuantity) => {
+      updateQuantity: async (productId, newQuantity, userId) => {
         const currentCart = get().cart;
         const item = currentCart.find(i => i.id === productId);
 
-        if (item && newQuantity > item.stock) {
-          console.warn("LOG: updateQuantity bloqueado por stock");
-          return;
-        }
+        if (item && newQuantity > item.stock) return;
 
-        set({
-          cart: currentCart.map((item) =>
-            item.id === productId ? { ...item, quantity: Math.max(1, newQuantity) } : item
-          ),
-        });
+        const updatedCart = currentCart.map((item) =>
+          item.id === productId ? { ...item, quantity: Math.max(1, newQuantity) } : item
+        );
+
+        set({ cart: updatedCart });
+        if (userId) get().syncWithDB(userId, updatedCart);
       },
     }),
-    { 
+    {
       name: 'cart-storage',
-      partialize: (state) => ({ cart: state.cart }), // No guardamos el booleano en el storage
+      partialize: (state) => ({ cart: state.cart }),
     }
   )
 );
