@@ -13,11 +13,10 @@ interface User {
 interface AuthState {
   user: User | null;
   isLoggedIn: boolean;
-  setLogin: (user: any) => void; // Usamos any aquí para facilitar la normalización
+  setLogin: (userData: any) => void;
   logout: () => void;
 }
 
-// ASEGÚRATE DE QUE EL NOMBRE AQUÍ SEA useAuthStore
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -25,7 +24,7 @@ export const useAuthStore = create<AuthState>()(
       isLoggedIn: false,
 
       setLogin: (userData) => {
-        // Normalizamos el ID para que siempre sea 'id' aunque venga '_id'
+        // Normalización garantizada de ID
         const normalizedUser = {
           ...userData,
           id: userData.id || userData._id || ""
@@ -36,16 +35,19 @@ export const useAuthStore = create<AuthState>()(
           isLoggedIn: true 
         });
 
-        // Inyectamos el carrito en el otro store si existe
-        if (userData.cart) {
+        // Sincronización automática con el Carrito
+        // Si el usuario que loguea trae productos en DB, los cargamos al store
+        if (userData.cart && userData.cart.length > 0) {
           useCartStore.getState().setCart(userData.cart);
         }
       },
 
       logout: () => {
         set({ user: null, isLoggedIn: false });
+        // Limpiamos el carrito al cerrar sesión por seguridad
         useCartStore.getState().clearCart();
         
+        // Limpieza de cookies de sesión
         if (typeof document !== 'undefined') {
           document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         }

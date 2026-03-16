@@ -7,6 +7,7 @@ import { useProductStore } from '@/store/useProductStore';
 import { Product } from '@/types';
 import { useSearchParams } from 'next/navigation';
 
+// --- COMPONENTE PADRE CON SUSPENSE ---
 export default function ProductosPage() {
   return (
     <Suspense 
@@ -23,24 +24,22 @@ export default function ProductosPage() {
   );
 }
 
+// --- CONTENIDO REAL DE PRODUCTOS ---
 function ProductosContent() {
-  const { products, setProducts, isLoading, setLoading } = useProductStore();
+  // Extraemos las acciones y el estado del Store
+  // Nota: He reemplazado setProducts por fetchProducts, que es la acción que debe manejar el fetch
+  const { products, fetchProducts, isLoading } = useProductStore();
   const [searchTerm, setSearchTerm] = useState('');
   
   const searchParams = useSearchParams();
   const categoriaURL = searchParams.get('categoria');
 
+  // Delegamos la carga de datos al Store
   useEffect(() => {
-    setLoading(true);
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(data => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [setProducts, setLoading]);
+    fetchProducts();
+  }, [fetchProducts]);
 
+  // Lógica de filtrado
   const filtered = products.filter((p: Product) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoriaURL 
@@ -86,8 +85,8 @@ function ProductosContent() {
           </div>
         </div>
 
-        {/* GRID DE PRODUCTOS */}
-        {isLoading ? (
+        {/* GRID DE PRODUCTOS O LOADING */}
+        {isLoading && products.length === 0 ? (
           <div className="flex justify-center items-center h-64">
             <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
@@ -96,7 +95,7 @@ function ProductosContent() {
             {filtered.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                 {filtered.map((product: Product) => (
-                  <ProductCard key={product._id} product={product} />
+                  <ProductCard key={product._id || product.id} product={product} />
                 ))}
               </div>
             ) : (

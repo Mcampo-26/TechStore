@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginInput } from '@/lib/zod';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useCartStore } from '@/store/useCartStore'; 
 import { useState } from 'react';
 import { Loader2, Mail, Lock, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -14,7 +13,6 @@ export const LoginForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const setLogin = useAuthStore((state) => state.setLogin);
-  const setCart = useCartStore((state) => state.setCart); 
   const router = useRouter();
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
@@ -34,14 +32,11 @@ export const LoginForm = () => {
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || 'Error al conectar');
 
+      // Esto ahora guarda el usuario Y carga su carrito automáticamente
       setLogin(result.user); 
 
-      if (result.user.cart && result.user.cart.length > 0) {
-        setCart(result.user.cart);
-      }
-
-      router.push('/');      
-      router.refresh();      
+      router.push('/');       
+      router.refresh();       
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -56,7 +51,6 @@ export const LoginForm = () => {
       <div className="rounded-[2.5rem] p-10 border shadow-sm transition-all"
            style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
         
-        {/* ENCABEZADO ESTILO PRODUCTO */}
         <div className="flex flex-col items-center mb-8">
            <div className="bg-blue-600/10 p-3 rounded-2xl text-blue-600 mb-4">
               <ShieldCheck size={24} />
@@ -74,7 +68,6 @@ export const LoginForm = () => {
             </div>
           )}
           
-          {/* INPUT EMAIL */}
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2"
                    style={{ color: 'var(--foreground)' }}>
@@ -95,7 +88,6 @@ export const LoginForm = () => {
             {errors.email && <p className="text-red-500 text-[9px] font-black uppercase tracking-tight mt-1 ml-2">{errors.email.message}</p>}
           </div>
 
-          {/* INPUT PASSWORD */}
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2"
                    style={{ color: 'var(--foreground)' }}>
@@ -116,15 +108,12 @@ export const LoginForm = () => {
             {errors.password && <p className="text-red-500 text-[9px] font-black uppercase tracking-tight mt-1 ml-2">{errors.password.message}</p>}
           </div>
 
-          {/* BOTÓN SUBMIT (ESTILO AGREGAR AL CARRITO) */}
           <button 
             type="submit"
             disabled={loading} 
             className="w-full py-5 rounded-2xl font-bold text-sm tracking-widest transition-all shadow-xl uppercase flex items-center justify-center gap-3 group bg-blue-600 text-white hover:bg-blue-500 shadow-blue-500/20 active:scale-95 disabled:opacity-50"
           >
-            {loading ? (
-              <Loader2 className="animate-spin" />
-            ) : (
+            {loading ? <Loader2 className="animate-spin" /> : (
               <>
                 Entrar al sistema
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform"/>
@@ -133,7 +122,6 @@ export const LoginForm = () => {
           </button>
         </form>
 
-        {/* FOOTER INTERNO */}
         <div className="mt-8 pt-8 border-t text-center" style={{ borderColor: 'var(--border-theme)' }}>
            <div className="flex justify-center gap-4 opacity-40">
               <Zap size={14} style={{ color: 'var(--foreground)' }} />

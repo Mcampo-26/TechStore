@@ -8,27 +8,27 @@ export async function POST(req: Request) {
       await dbConnect();
       const { email, password } = await req.json();
   
-      // Buscamos al usuario y traemos explícitamente el carrito
+      // Buscamos al usuario y traemos la contraseña (que suele estar oculta por defecto)
       const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
   
       if (!user || !(await bcrypt.compare(password, user.password))) {
         return NextResponse.json({ message: "Credenciales inválidas" }, { status: 401 });
       }
   
-      // LOGS DE CONTROL EN CONSOLA DEL SERVIDOR (Terminal)
       console.log("-----------------------------------------");
       console.log("✅ LOGIN EXITOSO:", user.email);
       console.log("📦 ENVIANDO CARRITO AL FRONT:", user.cart?.length || 0, "productos");
       console.log("-----------------------------------------");
   
+      // Devolvemos el objeto normalizado
       return NextResponse.json({
         message: "Login exitoso",
         user: {
-          id: user._id.toString(), // Convertimos ObjectId a String para evitar errores en el front
+          id: user._id.toString(), 
           name: user.name,
           email: user.email,
           role: user.role,
-          cart: user.cart || [] // Enviamos el array tal cual está en Mongo
+          cart: user.cart || [] 
         }
       }, { status: 200 });
   
