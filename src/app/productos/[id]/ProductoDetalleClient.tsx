@@ -55,7 +55,7 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
     const handleBuyNow = () => {
         if (!hasStock) return;
         setIsBuyingNow(true);
-        handleAddToCart();
+      
         setTimeout(() => router.push("/checkout"), 500);
     };
 
