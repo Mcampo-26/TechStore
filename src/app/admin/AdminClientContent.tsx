@@ -6,12 +6,13 @@ import { Trash2, Edit3, Search, Package, Plus, Zap, Box } from "lucide-react";
 import { EditProductModal } from "@/components/admin/EditProductModal";
 import { useProductStore } from "@/store/useProductStore"; 
 import { Product } from "@/types";
+import { useCategoryStore } from "@/store/useCategoryStore";
 
 interface Props {
   initialProducts: Product[];
+  initialCategories: any[]; // <--- AGREGADO: Recibimos categorías del servidor
 }
 
-// Estado inicial para nuevos productos
 const initialProductState = {
   name: "",
   price: 0,
@@ -25,17 +26,24 @@ const initialProductState = {
   descuento: 0
 };
 
-export default function AdminClientContent({ initialProducts }: Props) {
+export default function AdminClientContent({ initialProducts, initialCategories }: Props) {
   const { products, setProducts, updateProductInList } = useProductStore();
+  
+  // Traemos setCategories del store de categorías
+  const { setCategories } = useCategoryStore();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
-  // Sincronizar el store con los datos del servidor al cargar
+  // Sincronizar AMBOS stores con los datos del servidor al cargar
   useEffect(() => {
     setProducts(initialProducts);
-  }, [initialProducts, setProducts]);
+    if (initialCategories) {
+      setCategories(initialCategories); // <--- ESTO llena el selector del modal
+    }
+  }, [initialProducts, initialCategories, setProducts, setCategories]);
 
   const handleCreateClick = () => {
     setSelectedProduct({ ...initialProductState });
@@ -52,7 +60,6 @@ export default function AdminClientContent({ initialProducts }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Loader de carga
     Swal.fire({
       title: isCreating ? 'Creando...' : 'Actualizando...',
       allowOutsideClick: false,
@@ -73,10 +80,8 @@ export default function AdminClientContent({ initialProducts }: Props) {
         const result = await res.json();
         
         if (isCreating) {
-          // Si creamos, añadimos al inicio de la lista local
           setProducts([result, ...products]);
         } else {
-          // Si editamos, usamos la función del store
           updateProductInList(result);
         }
 
@@ -131,7 +136,7 @@ export default function AdminClientContent({ initialProducts }: Props) {
 
   return (
     <>
-      {/* --- STATS MINI PANEL --- */}
+      {/* Mini Panel de Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
           {[
               { label: 'Total Productos', value: products.length, icon: Package, color: 'text-blue-500' },
@@ -151,7 +156,6 @@ export default function AdminClientContent({ initialProducts }: Props) {
           ))}
       </div>
 
-      {/* --- HEADER --- */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-10">
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -171,7 +175,6 @@ export default function AdminClientContent({ initialProducts }: Props) {
         </button>
       </div>
 
-      {/* --- BUSCADOR --- */}
       <div className="relative group mb-12">
           <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none opacity-40">
               <Search size={22} />
@@ -186,7 +189,6 @@ export default function AdminClientContent({ initialProducts }: Props) {
           />
       </div>
 
-      {/* --- LISTADO DE PRODUCTOS --- */}
       <div className="rounded-[2.5rem] overflow-hidden border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
         <table className="w-full border-collapse">
           <thead>

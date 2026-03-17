@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Save, PlusCircle, Edit3, Zap, Image as ImageIcon, Check } from "lucide-react";
 import { useCategoryStore } from "@/store/useCategoryStore";
+import Swal from "sweetalert2";
 
 interface EditProductModalProps {
   isOpen: boolean;
@@ -21,16 +22,16 @@ export const EditProductModal = ({
   onUpdate,
   isCreating = false
 }: EditProductModalProps) => {
-  const { categories, fetchCategories, addCategory } = useCategoryStore();
+  const { categories, addCategory } = useCategoryStore();
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCatName, setNewCatName] = useState("");
 
   useEffect(() => {
     if (isOpen) {
-      fetchCategories();
       setIsAddingNew(false);
+      setNewCatName("");
     }
-  }, [isOpen, fetchCategories]);
+  }, [isOpen]);
 
   if (!isOpen || !product) return null;
 
@@ -43,27 +44,23 @@ export const EditProductModal = ({
     }
   };
 
-  const handleAddNewCategory = () => { // Quitamos el async
+  const handleAddNewCategory = async () => {
     if (!newCatName.trim()) return;
-    
-    // Creamos el objeto
-    const tempCategory = {
-      id: Date.now().toString(), 
-      name: newCatName.trim()
-    };
 
-    // Como addCategory es síncrona, se ejecuta al instante
-    addCategory(tempCategory); 
-    
-    // Actualizamos el resto del formulario
-    setProduct({ ...product, category: tempCategory.name });
-    setIsAddingNew(false);
-    setNewCatName("");
-    
-    // Ya no necesitas el try/catch porque no hay peticiones de red aquí
+    Swal.fire({ title: 'Guardando categoría...', didOpen: () => Swal.showLoading() });
+
+    const savedCat = await addCategory(newCatName.trim());
+
+    if (savedCat) {
+      setProduct({ ...product, category: savedCat.name });
+      setIsAddingNew(false);
+      setNewCatName("");
+      Swal.fire({ icon: 'success', title: 'Categoría creada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+    } else {
+      Swal.fire("Error", "No se pudo crear la categoría en la base de datos", "error");
+    }
   };
 
-  // Clase reutilizable para inputs que respetan el tema
   const inputClass = "w-full bg-[var(--card-bg)] text-[var(--foreground)] border-2 border-[var(--border-theme)] rounded-2xl px-5 py-3.5 font-semibold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:opacity-30";
 
   return (
@@ -83,15 +80,15 @@ export const EditProductModal = ({
               <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Panel de Control</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-full transition-all text-[var(--foreground)] opacity-50 hover:opacity-100">
+          <button onClick={onClose} className="p-2 hover:bg-red-500/10 hover:text-red-500 rounded-full transition-all text-[var(--foreground)] opacity-50">
             <X size={28} />
           </button>
         </div>
 
-        {/* CUERPO DEL FORMULARIO */}
+        {/* CUERPO */}
         <form className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           
-          {/* SWITCH DE OFERTA */}
+          {/* OFERTA */}
           <div className={`p-6 rounded-[2rem] border-2 transition-all ${product.isOferta ? 'bg-blue-600 border-blue-400 shadow-xl shadow-blue-600/20' : 'bg-[var(--card-bg)] border-[var(--border-theme)]'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -109,37 +106,29 @@ export const EditProductModal = ({
               </button>
             </div>
             {product.isOferta && (
-              <div className="mt-6 pt-6 border-t border-white/20 grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-black text-white/70 uppercase mb-2 block ml-2">Descuento (%)</label>
-                  <input 
-                    type="number" 
-                    className="w-full bg-white/10 border-2 border-white/20 rounded-xl px-4 py-2.5 text-white font-bold outline-none focus:border-white"
-                    value={product.descuento || ""}
-                    onChange={(e) => setProduct({ ...product, descuento: Number(e.target.value) })}
-                  />
-                </div>
+              <div className="mt-6 pt-6 border-t border-white/20">
+                <label className="text-[10px] font-black text-white/70 uppercase mb-2 block ml-2">Descuento (%)</label>
+                <input type="number" className="w-full bg-white/10 border-2 border-white/20 rounded-xl px-4 py-2.5 text-white font-bold outline-none focus:border-white" value={product.descuento || ""} onChange={(e) => setProduct({ ...product, descuento: Number(e.target.value) })} />
               </div>
             )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* NOMBRE */}
             <div className="md:col-span-2">
-              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Nombre del Producto</label>
-              <input type="text" className={inputClass} value={product.name || ""} onChange={(e) => setProduct({ ...product, name: e.target.value })} placeholder="Ej: Samsung Galaxy S24 Ultra" />
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Nombre</label>
+              <input type="text" className={inputClass} value={product.name || ""} onChange={(e) => setProduct({ ...product, name: e.target.value })} />
             </div>
 
-            {/* CATEGORIA */}
+            {/* SELECTOR CATEGORIAS */}
             <div className="flex flex-col">
-              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Categoría</label>
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Categoría</label>
               {!isAddingNew ? (
                 <select className={inputClass} value={product.category || ""} onChange={handleCategoryChange}>
                   <option value="">Seleccionar...</option>
                   {categories.map((cat: any) => (
-                    <option key={cat.id || cat._id} value={cat.name}>{cat.name}</option>
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
                   ))}
-                  <option value="NEW_CATEGORY" className="text-blue-600 font-bold">+ Crear Nueva...</option>
+                  <option value="NEW_CATEGORY" className="text-blue-600 font-bold italic">+ Crear Nueva...</option>
                 </select>
               ) : (
                 <div className="flex gap-2">
@@ -151,61 +140,37 @@ export const EditProductModal = ({
               )}
             </div>
 
-            {/* PRECIO */}
             <div>
-              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Precio (ARS)</label>
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Precio (ARS)</label>
               <input type="number" className={inputClass} value={product.price || ""} onChange={(e) => setProduct({ ...product, price: Number(e.target.value) })} />
             </div>
 
-            {/* STOCK */}
             <div>
-              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Stock Disponible</label>
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Stock</label>
               <input type="number" className={inputClass} value={product.stock ?? ""} onChange={(e) => setProduct({ ...product, stock: Number(e.target.value) })} />
             </div>
 
-            {/* IMAGEN PRINCIPAL */}
-            <div>
-              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">URL Imagen 1 (Principal)</label>
+            <div className="md:col-span-2">
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Imagen Principal (URL)</label>
               <div className="relative">
-                <ImageIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20 text-[var(--foreground)]" />
+                <ImageIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20" />
                 <input type="text" className={`${inputClass} pl-12`} value={product.image || ""} onChange={(e) => setProduct({ ...product, image: e.target.value })} />
               </div>
             </div>
 
-            {/* IMAGENES ADICIONALES */}
-            <div className="md:col-span-2 grid grid-cols-2 gap-4">
-               <div>
-                  <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">URL Imagen 2</label>
-                  <input type="text" className={inputClass} value={product.image2 || ""} onChange={(e) => setProduct({ ...product, image2: e.target.value })} />
-               </div>
-               <div>
-                  <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">URL Imagen 3</label>
-                  <input type="text" className={inputClass} value={product.image3 || ""} onChange={(e) => setProduct({ ...product, image3: e.target.value })} />
-               </div>
-            </div>
-
-            {/* DESCRIPCIÓN */}
             <div className="md:col-span-2">
-              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest text-[var(--foreground)] opacity-40">Descripción Detallada</label>
+              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Descripción</label>
               <textarea className={`${inputClass} h-32 resize-none`} value={product.description || ""} onChange={(e) => setProduct({ ...product, description: e.target.value })} />
             </div>
           </div>
         </form>
 
-        {/* FOOTER ACCIONES */}
+        {/* FOOTER */}
         <div className="p-8 border-t border-[var(--border-theme)] flex gap-4 bg-[var(--nav-bg)]">
-          <button 
-            type="button" 
-            onClick={onClose}
-            className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-[var(--border-theme)] text-[var(--foreground)] opacity-50 hover:opacity-100 hover:bg-red-500/5 transition-all"
-          >
+          <button type="button" onClick={onClose} className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-[var(--border-theme)] opacity-50 hover:opacity-100 transition-all">
             Descartar
           </button>
-          <button 
-            type="button"
-            onClick={onUpdate}
-            className="flex-[2] py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"
-          >
+          <button type="button" onClick={onUpdate} className="flex-[2] py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95">
             <Save size={18} />
             {isCreating ? "Confirmar y Publicar" : "Guardar Cambios"}
           </button>

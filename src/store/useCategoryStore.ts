@@ -10,15 +10,16 @@ interface CategoryState {
   categories: Category[];
   isLoading: boolean;
   setCategories: (categories: Category[]) => void;
-  fetchCategories: () => Promise<void>; // Lo que pedía el Modal
-  addCategory: (category: Category) => void; // Nombre estándar para el Modal
+  fetchCategories: () => Promise<void>;
+  addCategory: (name: string) => Promise<Category | null>;
   setLoading: (status: boolean) => void;
 }
 
-export const useCategoryStore = create<CategoryState>((set) => ({
+export const useCategoryStore = create<CategoryState>((set, get) => ({
   categories: [],
   isLoading: false,
 
+  // Sincroniza datos que vienen del servidor (Server Components)
   setCategories: (categories) => {
     const normalized = categories.map(c => ({
       ...c,
@@ -27,11 +28,12 @@ export const useCategoryStore = create<CategoryState>((set) => ({
     set({ categories: normalized, isLoading: false });
   },
 
+  // Refresca los datos desde el cliente si es necesario
   fetchCategories: async () => {
     set({ isLoading: true });
     try {
-      // Importante: Esto asume que tienes una ruta api/categories/route.ts
       const res = await fetch('/api/categories');
+      if (!res.ok) throw new Error();
       const data = await res.json();
       const normalized = data.map((c: any) => ({ 
         ...c, 
@@ -44,14 +46,32 @@ export const useCategoryStore = create<CategoryState>((set) => ({
     }
   },
 
-  addCategory: (newCat) => set((state) => {
-    const normalizedCat = { ...newCat, id: String(newCat._id || newCat.id) };
-    if (state.categories.some(c => c.id === normalizedCat.id)) return state;
-    
-    return { 
-      categories: [...state.categories, normalizedCat].sort((a, b) => a.name.localeCompare(b.name)) 
-    };
-  }),
+  // Crea la categoría en la DB y actualiza el estado global
+  addCategory: async (name: string) => {
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+
+      if (!res.ok) throw new Error("Error al guardar categoría");
+      
+      const savedCat = await res.json();
+      const normalizedCat = { ...savedCat, id: String(savedCat._id || savedCat.id) };
+
+      set((state) => ({
+        categories: [...state.categories, normalizedCat].sort((a, b) => 
+          a.name.localeCompare(b.name)
+        )
+      }));
+
+      return normalizedCat;
+    } catch (error) {
+      console.error("Error en addCategory:", error);
+      return null;
+    }
+  },
 
   setLoading: (status) => set({ isLoading: status }),
 }));
