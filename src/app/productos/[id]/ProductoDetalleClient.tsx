@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import Image from 'next/image'; // <--- El componente estrella de Next.js
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
 import {
     ArrowLeft, ShoppingCart, ShieldCheck, Star,
-    CheckCircle2, RotateCcw, Truck, Info
+    CheckCircle2, RotateCcw, Truck, Info, Zap
 } from 'lucide-react';
 import Link from 'next/link';
 import { Product } from '@/types';
@@ -21,7 +21,7 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
     const router = useRouter();
     const { setCurrentProduct } = useProductStore();
     const addToCart = useCartStore((state) => state.addToCart);
-    const { user, isLoggedIn } = useAuthStore();
+    const { user } = useAuthStore();
 
     const [isBuyingNow, setIsBuyingNow] = useState(false);
     const [mainImage, setMainImage] = useState<string>(product?.image || '');
@@ -39,6 +39,7 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
 
     if (!product) return null;
 
+    // Lógica de Precios
     const esOferta = String(product.isOferta) === "true";
     const descuentoNum = Number(product.descuento || 0);
     const precioOriginal = Number(product.price) || 0;
@@ -55,201 +56,136 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
     const handleBuyNow = () => {
         if (!hasStock) return;
         setIsBuyingNow(true);
-      
+        handleAddToCart(); // Agregamos al carrito antes de ir al checkout
         setTimeout(() => router.push("/checkout"), 500);
     };
 
-    // Función para manejar la Lupa
+    // Manejo de Lupa
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!containerRef.current) return;
         const { left, top, width, height } = containerRef.current.getBoundingClientRect();
-        const x = ((e.pageX - left - window.scrollX) / width) * 100;
-        const y = ((e.pageY - top - window.scrollY) / height) * 100;
+        const x = ((e.clientX - left) / width) * 100;
+        const y = ((e.clientY - top) / height) * 100;
 
         setZoomStyle({
             display: 'block',
             backgroundPosition: `${x}% ${y}%`,
             backgroundImage: `url(${mainImage})`,
+            backgroundSize: '200%' // Zoom de 2x
         });
-    };
-
-    const handleMouseLeave = () => {
-        setZoomStyle({ display: 'none' });
     };
 
     const allImages = [product.image, product.image2, product.image3].filter(Boolean) as string[];
 
     return (
-        <div className="min-h-screen pt-32 pb-20 px-4 md:px-10 transition-colors duration-300" style={{ backgroundColor: 'var(--background)' }}>
-            <div className="max-w-[1200px] mx-auto bg-white rounded-xl shadow-sm border overflow-hidden" style={{ borderColor: 'var(--border-theme)', backgroundColor: 'var(--card-bg)' }}>
+        <div className="max-w-7xl mx-auto px-4 py-12">
+            {/* BOTÓN VOLVER */}
+            <button 
+                onClick={() => router.back()}
+                className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all mb-8"
+            >
+                <ArrowLeft size={16} /> Volver al catálogo
+            </button>
 
-                {/* NAVEGACIÓN MEJORADA */}
-                <div className="px-6 py-4 flex items-center justify-between border-b bg-gray-50/30" style={{ borderColor: 'var(--border-theme)' }}>
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => router.back()}
-                            className="group flex items-center gap-2 text-[14px] font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                        >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="group-hover:-translate-x-1 transition-transform"
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                
+                {/* COLUMNA IZQUIERDA: IMÁGENES */}
+                <div className="space-y-4">
+                    <div 
+                        ref={containerRef}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={() => setZoomStyle({ display: 'none' })}
+                        className="relative aspect-square rounded-[3rem] overflow-hidden bg-white border border-[var(--border-theme)] cursor-zoom-in"
+                    >
+                        {/* IMAGEN PRINCIPAL CON NEXT/IMAGE */}
+                        <Image 
+                            src={mainImage} 
+                            alt={product.name}
+                            fill
+                            priority // Hace que la imagen cargue PRIMERO que todo
+                            className="object-contain p-8"
+                        />
+                        
+                        {/* CAPA DE LUPA */}
+                        <div 
+                            className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+                            style={zoomStyle}
+                        />
+
+                        {esOferta && (
+                            <div className="absolute top-6 left-6 bg-blue-600 text-white px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-tighter flex items-center gap-2 shadow-xl shadow-blue-600/30">
+                                <Zap size={14} fill="white" /> -{descuentoNum}% OFF
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MINIATURAS */}
+                    <div className="flex gap-4">
+                        {allImages.map((img, i) => (
+                            <button 
+                                key={i}
+                                onClick={() => setMainImage(img)}
+                                className={`w-24 h-24 rounded-2xl border-2 overflow-hidden bg-white p-2 transition-all ${mainImage === img ? 'border-blue-600 scale-105 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
                             >
-                                <path d="M19 12H5M12 19l-7-7 7-7" />
-                            </svg>
-                            Volver al listado
-                        </button>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-[12px] tracking-wide uppercase font-bold opacity-50">
-                        <span className="text-gray-500">Categoría</span>
-                        <span className="text-gray-300 font-light mx-1">|</span>
-                        <span className="text-blue-600/80">{product.category}</span>
+                                <Image src={img} alt="thumb" width={100} height={100} className="object-contain w-full h-full" />
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
-
-                    {/* COLUMNA GALERÍA ADAPTADA (Miniaturas funcionales en Mobile) */}
-                    <div className="lg:col-span-8 p-4 md:p-6 flex flex-col md:flex-row gap-4">
-
-                        {/* Miniaturas: Fila en mobile, Columna en Desktop */}
-                        <div className="flex flex-row md:flex-col gap-2 order-2 md:order-1 overflow-x-auto md:overflow-y-visible pb-2 md:pb-0 scrollbar-hide">
-                            {allImages.map((img, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setMainImage(img)}
-                                    onMouseEnter={() => setMainImage(img)}
-                                    className={`flex-shrink-0 w-16 h-16 md:w-14 md:h-14 rounded-md border-2 overflow-hidden bg-white p-1 transition-all ${mainImage === img ? 'border-blue-500' : 'border-gray-200 hover:border-blue-300'}`}
-                                >
-                                    <div className="relative w-full h-full">
-                                        <Image src={img} alt="thumb" fill className="object-contain" sizes="64px" />
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Contenedor Imagen Principal + Lupa */}
-                        <div
-                            ref={containerRef}
-                            onMouseMove={handleMouseMove}
-                            onMouseLeave={handleMouseLeave}
-                            className="flex-grow flex items-center justify-center bg-white rounded-lg p-4 h-[350px] md:h-[500px] relative overflow-hidden cursor-zoom-in order-1 md:order-2"
-                        >
-                            <Image
-                                src={mainImage}
-                                alt={product.name}
-                                fill
-                                priority
-                                className="object-contain p-4 md:p-8"
-                                sizes="(max-width: 1024px) 100vw, 700px"
-                            />
-
-                            {/* CAPA DE LUPA (Solo visible en PC) */}
-                            <div
-                                className="absolute inset-0 z-20 pointer-events-none bg-no-repeat bg-white transition-opacity duration-200 hidden md:block"
-                                style={{
-                                    ...zoomStyle,
-                                    backgroundSize: '100%',
-                                    opacity: zoomStyle.display === 'block' ? 1 : 0
-                                }}
-                            />
+                {/* COLUMNA DERECHA: INFO */}
+                <div className="flex flex-col gap-6">
+                    <div>
+                        <p className="text-blue-500 font-black text-xs uppercase tracking-[0.3em] mb-2">{product.category}</p>
+                        <h1 className="text-4xl md:text-5xl font-black text-[var(--foreground)] tracking-tighter leading-none mb-4">{product.name}</h1>
+                        <div className="flex items-center gap-2">
+                            <div className="flex text-amber-400"><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/></div>
+                            <span className="text-[10px] font-bold opacity-30">(45 Reseñas)</span>
                         </div>
                     </div>
 
-                    {/* COLUMNA COMPRA */}
-                    <div className="lg:col-span-4 border-l p-6 flex flex-col gap-4" style={{ borderColor: 'var(--border-theme)' }}>
-                        <div className="space-y-1">
-                            <p className="text-xs opacity-50 uppercase font-bold">Nuevo | +100 vendidos</p>
-                            <h1 className="text-2xl font-bold leading-tight" style={{ color: 'var(--foreground)' }}>
-                                {product.name}
-                            </h1>
-                            <div className="flex items-center gap-1 mt-2">
-                                {[1, 2, 3, 4, 5].map(s => <Star key={s} size={14} className="text-blue-500" fill="currentColor" />)}
-                                <span className="text-xs ml-2 opacity-50">(45 opiniones)</span>
-                            </div>
+                    <div className="py-6 border-y border-[var(--border-theme)]">
+                        {esOferta && (
+                            <p className="text-sm font-bold text-red-500 line-through opacity-50 mb-1">${precioOriginal.toLocaleString()}</p>
+                        )}
+                        <p className="text-5xl font-black text-[var(--foreground)] tracking-tight">
+                            ${precioFinal.toLocaleString()}
+                        </p>
+                    </div>
+
+                    <p className="text-[var(--foreground)] opacity-70 leading-relaxed font-medium">{product.description}</p>
+
+                    {/* ACCIONES */}
+                    <div className="space-y-4 pt-4">
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={handleBuyNow}
+                                disabled={!hasStock}
+                                className={`flex-[2] py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest transition-all ${hasStock ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/30 hover:scale-[1.02] active:scale-95' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                            >
+                                {isBuyingNow ? "Procesando..." : "Comprar Ahora"}
+                            </button>
+                            <button 
+                                onClick={handleAddToCart}
+                                disabled={!hasStock}
+                                className="flex-1 py-5 rounded-[2rem] border-2 border-[var(--border-theme)] flex items-center justify-center gap-2 hover:bg-[var(--foreground)] hover:text-[var(--background)] transition-all active:scale-95"
+                            >
+                                <ShoppingCart size={20} />
+                            </button>
                         </div>
 
-                        <div className="py-4">
-                            {esOferta && (
-                                <span className="text-base opacity-40 line-through" style={{ color: 'var(--foreground)' }}>
-                                    $ {precioOriginal.toLocaleString('es-AR')}
-                                </span>
-                            )}
-                            <div className="flex items-center gap-3">
-                                <span className="text-4xl font-light" style={{ color: 'var(--foreground)' }}>
-                                    $ {precioFinal.toLocaleString('es-AR')}
-                                </span>
-                                {esOferta && <span className="text-emerald-500 text-lg font-medium">{descuentoNum}% OFF</span>}
+                        {/* INFO EXTRA */}
+                        <div className="grid grid-cols-2 gap-4 mt-6">
+                            <div className="flex items-center gap-3 p-4 rounded-3xl bg-[var(--card-bg)] border border-[var(--border-theme)]">
+                                <Truck size={20} className="text-blue-500" />
+                                <div className="leading-none"><p className="text-[10px] font-black uppercase mb-1">Envío Gratis</p><p className="text-[9px] opacity-40 font-bold">Todo el país</p></div>
                             </div>
-                            <p className="text-blue-500 text-sm mt-2 font-medium">en 12x $ {(precioFinal / 12).toLocaleString('es-AR', { maximumFractionDigits: 0 })} sin interés</p>
-                        </div>
-
-                        <div className="space-y-4 my-2">
-                            <div className="flex gap-3">
-                                <Truck size={20} className="text-emerald-500 shrink-0" />
-                                <div>
-                                    <p className="text-emerald-500 text-sm font-medium">Llega gratis mañana</p>
-                                    <p className="text-xs opacity-50">Beneficio Mercado Puntos</p>
-                                </div>
+                            <div className="flex items-center gap-3 p-4 rounded-3xl bg-[var(--card-bg)] border border-[var(--border-theme)]">
+                                <ShieldCheck size={20} className="text-emerald-500" />
+                                <div className="leading-none"><p className="text-[10px] font-black uppercase mb-1">Garantía</p><p className="text-[9px] opacity-40 font-bold">12 Meses</p></div>
                             </div>
-                            <div className="flex gap-3">
-                                <RotateCcw size={20} className="text-emerald-500 shrink-0" />
-                                <div>
-                                    <p className="text-emerald-500 text-sm font-medium">Devolución gratis</p>
-                                    <p className="text-xs opacity-50">Tenés 30 días desde que lo recibís.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3 mt-4">
-                            <p className="text-base font-bold">Stock disponible</p>
-                            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-lg border text-sm mb-4">
-                                Cantidad: <span className="font-bold">1 unidad</span> <span className="opacity-40 text-xs">({product.stock} disponibles)</span>
-                            </div>
-
-                            {isLoggedIn ? (
-                                <>
-                                    <button
-                                        onClick={handleBuyNow}
-                                        disabled={isBuyingNow || !hasStock}
-                                        className="w-full bg-blue-500 text-white h-12 rounded-lg font-bold hover:bg-blue-600 transition-all disabled:opacity-50"
-                                    >
-                                        {isBuyingNow ? "Procesando..." : "Comprar ahora"}
-                                    </button>
-                                    <button
-                                        onClick={handleAddToCart}
-                                        disabled={!hasStock}
-                                        className="w-full bg-blue-500/10 text-blue-600 h-12 rounded-lg font-bold hover:bg-blue-500/20 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <ShoppingCart size={18} /> Agregar al carrito
-                                    </button>
-                                </>
-                            ) : (
-                                <Link href="/login" className="block text-center w-full bg-blue-500 text-white h-12 leading-[48px] rounded-lg font-bold">
-                                    Ingresá para comprar
-                                </Link>
-                            )}
-                        </div>
-
-                        <div className="mt-6 space-y-3 text-xs opacity-60">
-                            <div className="flex gap-2"><ShieldCheck size={16} /> Compra Protegida</div>
-                            <div className="flex gap-2"><CheckCircle2 size={16} /> 12 meses de garantía de fábrica</div>
                         </div>
                     </div>
-                </div>
-
-                <div className="p-10 border-t" style={{ borderColor: 'var(--border-theme)' }}>
-                    <h2 className="text-2xl mb-6 font-medium">Descripción</h2>
-                    <p className="text-lg opacity-70 whitespace-pre-line leading-relaxed max-w-4xl font-medium">
-                        {product.description}
-                    </p>
                 </div>
             </div>
         </div>

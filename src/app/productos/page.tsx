@@ -1,24 +1,30 @@
-  import { getProductsServer } from "@/lib/products-server";
-  import ProductosClientContent from "./ProductosClientContent";
-  import { Suspense } from "react";
+import { getProductsServer } from "@/lib/products-server";
+import ProductosClientContent from "./ProductosClientContent"; // <--- REVISA ESTO
+import { Suspense } from "react";
 
-  interface PageProps {
-    // searchParams DEBE ser una Promise en versiones recientes
-    searchParams: Promise<{ categoria?: string }>;
-  }
+export default async function ProductosPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ categoria?: string }> 
+}) {
+  // 1. Resolvemos params primero
+  const resolvedParams = await searchParams;
+  const categoriaActiva = resolvedParams.categoria || "Todas";
 
-  export default async function ProductosPage({ searchParams }: PageProps) {
-    const products = await getProductsServer();
-    const resolvedSearchParams = await searchParams; // <--- ERROR SOLUCIONADO AQUÍ
-    
-    const categoriaActiva = resolvedSearchParams.categoria || "Todas";
+  // 2. Traemos productos
+  const allProducts = await getProductsServer() || [];
 
-    return (
-      <Suspense fallback={<div className="h-screen flex items-center justify-center">Cargando catálogo...</div>}>
-        <ProductosClientContent 
-          initialProducts={products} 
-          activeCategory={categoriaActiva} 
-        />
-      </Suspense>
-    );
-  }
+  // 3. Filtramos
+  const filteredProducts = categoriaActiva === "Todas" 
+    ? allProducts 
+    : allProducts.filter((p: any) => p.category === categoriaActiva);
+
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">Cargando...</div>}>
+      <ProductosClientContent 
+        initialProducts={filteredProducts} 
+        activeCategory={categoriaActiva} 
+      />
+    </Suspense>
+  );
+}
