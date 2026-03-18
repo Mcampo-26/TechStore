@@ -3,11 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { 
   ShoppingCart, LogOut, Laptop, Menu, X, 
-  ShieldCheck, ChevronDown, Sun, Moon, Zap 
+  ShieldCheck, ChevronDown, Sun, Moon, Zap, 
+  User 
 } from 'lucide-react'; 
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useProductStore } from '@/store/useProductStore'; // Importamos el store de productos
+import { useProductStore } from '@/store/useProductStore';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
@@ -22,7 +23,6 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const cart = useCartStore((state) => state.cart);
   const { isLoggedIn, logout } = useAuthStore();
   
-  // Acciones del Store de Productos para filtros instantáneos
   const filterByCategory = useProductStore((state) => state.filterByCategory);
   const filterByOffers = useProductStore((state) => state.filterByOffers);
 
@@ -55,11 +55,9 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
   const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
-  // Manejador de clic en categorías
   const handleCategoryAction = (categoryName: string) => {
     if (pathname === '/productos') {
       filterByCategory(categoryName);
-      // Actualizamos la URL suavemente sin recargar
       window.history.pushState(null, '', `/productos?categoria=${encodeURIComponent(categoryName)}`);
     } else {
       router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
@@ -67,7 +65,6 @@ export const Navbar = ({ categories }: NavbarProps) => {
     setIsMobileMenuOpen(false);
   };
 
-  // Manejador de clic en ofertas
   const handleOffersAction = () => {
     if (pathname === '/productos') {
       filterByOffers();
@@ -109,7 +106,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
           </Link>
 
           {/* NAVEGACIÓN DESKTOP */}
-          <ul className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest">
+          <ul className="hidden md:flex items-center gap-6 text-[10px] font-black uppercase tracking-widest">
             <li>
               <Link href="/" className="hover:text-blue-600 transition-colors" style={{ color: 'var(--foreground)' }}>Inicio</Link>
             </li>
@@ -155,16 +152,26 @@ export const Navbar = ({ categories }: NavbarProps) => {
               </div>
             </li>
 
-            {mounted && isLoggedIn && (
-              <li>
-                <Link href="/admin" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[10px] font-black uppercase tracking-tighter bg-amber-500/10 text-amber-600 border-amber-600/20 hover:bg-amber-600 hover:text-white">
-                  <ShieldCheck size={14} /> Admin
+            {/* LOGIN / LOGOUT DESKTOP */}
+            {mounted && (
+              isLoggedIn ? (
+                <div className="flex items-center gap-4 border-l pl-6 border-[var(--border-theme)]">
+                  <Link href="/admin" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-600 border border-amber-600/20 hover:bg-amber-600 hover:text-white transition-all">
+                    <ShieldCheck size={14} /> Admin
+                  </Link>
+                  <button onClick={handleLogout} className="flex items-center gap-1.5 text-red-500 hover:text-red-700 transition-colors">
+                    <LogOut size={16} /> <span className="hidden lg:block">Salir</span>
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-blue-600/30 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-lg shadow-blue-600/5">
+                  <User size={14} /> Ingresar
                 </Link>
-              </li>
+              )
             )}
           </ul>
 
-          {/* ACCIONES */}
+          {/* ACCIONES ICONOS */}
           <div className="flex items-center gap-2 sm:gap-3">
             <button onClick={toggleTheme} className="p-2.5 rounded-xl border transition-all hover:border-blue-600 hover:text-blue-600" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}>
               {!mounted ? <div className="w-[18px] h-[18px]" /> : (isDarkMode ? <Sun size={18} /> : <Moon size={18} />)}
@@ -206,7 +213,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
             <div className="h-px w-full bg-gray-500/10" />
 
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Categorías</span>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 gap-2 overflow-y-auto max-h-[35vh] pr-2 custom-scrollbar">
               {categories.map((cat: any) => (
                 <button 
                   key={cat._id} 
@@ -220,11 +227,36 @@ export const Navbar = ({ categories }: NavbarProps) => {
             </div>
           </div>
 
-          {mounted && isLoggedIn && (
-            <button onClick={handleLogout} className="mt-auto flex items-center justify-center gap-2 p-4 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 font-black uppercase text-xs tracking-widest">
-              <LogOut size={18} /> Cerrar Sesión
-            </button>
-          )}
+          {/* SECCIÓN FINAL: LOGIN / ADMIN / LOGOUT MÓVIL */}
+          <div className="mt-auto pt-6 border-t border-[var(--border-theme)] flex flex-col gap-3">
+            {mounted && (
+              isLoggedIn ? (
+                <>
+                  <Link 
+                    href="/admin" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-amber-500/10 text-amber-600 border border-amber-600/20 font-black uppercase text-xs tracking-widest"
+                  >
+                    <ShieldCheck size={18} /> Panel Admin
+                  </Link>
+                  <button 
+                    onClick={handleLogout} 
+                    className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 font-black uppercase text-xs tracking-widest"
+                  >
+                    <LogOut size={18} /> Cerrar Sesión
+                  </button>
+                </>
+              ) : (
+                <Link 
+                  href="/login" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-blue-600/30 active:scale-95 transition-transform"
+                >
+                  <User size={18} /> Iniciar Sesión
+                </Link>
+              )
+            )}
+          </div>
         </div>
       </div>
     </>
