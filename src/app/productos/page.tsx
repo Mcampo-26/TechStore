@@ -1,5 +1,5 @@
 import { getProductsServer } from "@/lib/products-server";
-import ProductosClientContent from "./ProductosClientContent"; // <--- REVISA ESTO
+import ProductosClientContent from "./ProductosClientContent";
 import { Suspense } from "react";
 
 export default async function ProductosPage({ 
@@ -7,20 +7,21 @@ export default async function ProductosPage({
 }: { 
   searchParams: Promise<{ categoria?: string }> 
 }) {
-  // 1. Resolvemos params primero
   const resolvedParams = await searchParams;
   const categoriaActiva = resolvedParams.categoria || "Todas";
 
-  // 2. Traemos productos
   const allProducts = await getProductsServer() || [];
 
-  // 3. Filtramos
   const filteredProducts = categoriaActiva === "Todas" 
     ? allProducts 
     : allProducts.filter((p: any) => p.category === categoriaActiva);
 
   return (
-    <Suspense fallback={<div className="h-screen flex items-center justify-center">Cargando...</div>}>
+    // La clave 'key' fuerza a React a resetear el componente cuando cambia la categoría
+    <Suspense 
+      key={categoriaActiva} 
+      fallback={<div className="h-screen flex items-center justify-center font-black uppercase tracking-widest text-xs">Filtrando...</div>}
+    >
       <ProductosClientContent 
         initialProducts={filteredProducts} 
         activeCategory={categoriaActiva} 

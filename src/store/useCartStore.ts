@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import Swal from 'sweetalert2';
 
 export interface CartItem {
   id: string;
@@ -19,7 +18,7 @@ interface CartState {
   closeDrawer: () => void;
   setCart: (newCart: CartItem[]) => void;
   clearCart: () => void;
-  addToCart: (product: any, userId?: string) => Promise<void>;
+  addToCart: (product: any, userId?: string) => Promise<{ success: boolean; limit?: number }>;
   removeFromCart: (productId: string, userId?: string) => Promise<void>;
   updateQuantity: (productId: string, newQuantity: number, userId?: string) => Promise<void>;
   revalidateCartStock: (allProducts?: any[]) => void;
@@ -37,7 +36,6 @@ export const useCartStore = create<CartState>()(
       setCart: (newCart) => set({ cart: newCart }),
       clearCart: () => set({ cart: [] }),
 
-      // 1. SINCRONIZACIÓN CON MONGODB
       syncWithDB: async (userId, cart) => {
         if (!userId) return;
         try {
@@ -51,23 +49,26 @@ export const useCartStore = create<CartState>()(
         }
       },
 
-      // 2. REVALIDACIÓN DE STOCK (Crucial para el CarritoPage)
       revalidateCartStock: (allProducts) => {
         if (!allProducts || allProducts.length === 0) return;
         
         const currentCart = get().cart;
         const updatedCart = currentCart.map(item => {
-          // Buscamos el producto fresco que viene del servidor
           const fresh = allProducts.find(p => (p._id || p.id) === item.id);
           
           if (fresh) {
             const freshStock = Number(fresh.stock);
-            // Si el stock actual es menor a lo que el usuario quiere comprar, lo bajamos al máximo disponible
+            // Calculamos precio de oferta por si cambió mientras no estaba conectado
+            const priceBase = Number(fresh.price);
+            const discountedPrice = fresh.isOferta 
+              ? priceBase * (1 - (fresh.descuento || 0) / 100) 
+              : priceBase;
+
             const adjustedQuantity = item.quantity > freshStock ? freshStock : item.quantity;
             
             return { 
               ...item, 
-              price: Number(fresh.price), // Actualizamos precio por si cambió
+              price: discountedPrice, 
               stock: freshStock,
               quantity: adjustedQuantity > 0 ? adjustedQuantity : 1
             };
@@ -78,29 +79,20 @@ export const useCartStore = create<CartState>()(
         set({ cart: updatedCart });
       },
 
-      // 3. AGREGAR AL CARRITO
       addToCart: async (product, userId) => {
         const productId = product._id || product.id;
         const currentCart = get().cart;
         const existing = currentCart.find((item) => item.id === productId);
         const availableStock = Number(product.stock);
 
-        // Si ya no hay stock disponible
         if (existing && existing.quantity >= availableStock) {
-          set({ isDrawerOpen: false });
-          Swal.fire({
-            title: '¡LÍMITE DE STOCK!',
-            text: `Solo quedan ${availableStock} unidades disponibles.`,
-            icon: 'warning',
-            confirmButtonText: 'ENTENDIDO',
-            buttonsStyling: false,
-            customClass: {
-              popup: 'rounded-[2.5rem] border-4 border-blue-600',
-              confirmButton: 'px-12 py-5 bg-blue-600 text-white font-black rounded-2xl'
-            }
-          });
-          return;
+          return { success: false, limit: availableStock };
         }
+
+        const priceBase = Number(product.price);
+        const finalPrice = product.isOferta 
+          ? priceBase * (1 - (product.descuento || 0) / 100) 
+          : priceBase;
 
         let updatedCart: CartItem[];
         if (existing) {
@@ -112,7 +104,7 @@ export const useCartStore = create<CartState>()(
             id: productId,
             name: product.name,
             description: product.description || "",
-            price: Number(product.price),
+            price: finalPrice,
             image: product.image,
             quantity: 1,
             stock: availableStock,
@@ -121,25 +113,21 @@ export const useCartStore = create<CartState>()(
 
         set({ cart: updatedCart, isDrawerOpen: true });
         if (userId) get().syncWithDB(userId, updatedCart);
+        return { success: true };
       },
 
-      // 4. QUITAR DEL CARRITO
       removeFromCart: async (productId, userId) => {
         const updatedCart = get().cart.filter((item) => item.id !== productId);
         set({ cart: updatedCart });
         if (userId) get().syncWithDB(userId, updatedCart);
       },
 
-      // 5. ACTUALIZAR CANTIDAD (+ o -)
       updateQuantity: async (productId, newQuantity, userId) => {
         const currentCart = get().cart;
         const item = currentCart.find(i => i.id === productId);
-
         if (!item) return;
 
-        // Si intenta subir más del stock, lo frenamos en el stock máximo
         const validatedQuantity = newQuantity > item.stock ? item.stock : Math.max(1, newQuantity);
-
         const updatedCart = currentCart.map((it) =>
           it.id === productId ? { ...it, quantity: validatedQuantity } : it
         );
@@ -150,7 +138,6 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'cart-storage',
-      // Solo persistimos el array 'cart', los estados de UI como 'isDrawerOpen' no.
       partialize: (state) => ({ cart: state.cart }),
     }
   )

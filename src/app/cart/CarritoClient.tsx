@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image"; // <--- Importamos Image
+import Image from "next/image";
 import { AiOutlinePlus, AiOutlineMinus } from "react-icons/ai";
 import { ShoppingBag, Trash2, AlertTriangle } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
@@ -10,12 +10,12 @@ import { useProductStore } from "@/store/useProductStore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Product } from "@/types";
+import Swal from "sweetalert2";
 
 interface Props {
   initialProducts: Product[];
 }
 
-// --- SUB-COMPONENTE DE FILA OPTIMIZADO ---
 const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   const [showError, setShowError] = useState(false);
   const price = Number(item.price) || 0;
@@ -26,6 +26,18 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
     if (quantity >= stock) {
       setShowError(true);
       setTimeout(() => setShowError(false), 2000);
+      
+      // Alerta de stock máximo alcanzado
+      Swal.fire({
+        title: '¡Límite alcanzado!',
+        text: `Solo tenemos ${stock} unidades disponibles.`,
+        icon: 'warning',
+        toast: true,
+        position: 'top-end',
+        timer: 3000,
+        showConfirmButton: false,
+        timerProgressBar: true
+      });
     } else {
       updateQuantity(item.id, quantity + 1, userId);
     }
@@ -35,15 +47,8 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
     <div className="p-4 rounded-xl shadow-sm flex items-center gap-4 border transition-all duration-300"
          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
       
-      {/* IMAGEN OPTIMIZADA */}
       <div className="relative bg-white p-2 rounded-lg w-24 h-24 flex items-center justify-center shrink-0 overflow-hidden">
-        <Image 
-          src={item.image} 
-          alt={item.name} 
-          fill
-          sizes="96px" // El contenedor es w-24 (96px)
-          className="object-contain p-2"
-        />
+        <Image src={item.image} alt={item.name} fill sizes="96px" className="object-contain p-2" />
       </div>
 
       <div className="flex-grow">
@@ -52,10 +57,10 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
           <div className="relative">
             {showError && (
               <div className="absolute top-10 left-0 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-bounce flex items-center gap-1 z-10 font-bold whitespace-nowrap">
-                <AlertTriangle size={25} /> Solo hay {stock} disponibles
+                <AlertTriangle size={14} /> Solo hay {stock} disponibles
               </div>
             )}
-            <div className={`flex items-center border rounded-lg overflow-hidden transition-all ${showError ? 'animate-shake border-red-500' : ''}`}
+            <div className={`flex items-center border rounded-lg overflow-hidden transition-all ${showError ? 'border-red-500' : ''}`}
                  style={{ borderColor: 'var(--border-theme)' }}>
               <button onClick={() => updateQuantity(item.id, quantity - 1, userId)} 
                       className="p-2 opacity-60 hover:opacity-100 disabled:opacity-20" 
@@ -81,7 +86,6 @@ export default function CarritoClient({ initialProducts }: Props) {
   const { cart, removeFromCart, updateQuantity, revalidateCartStock } = useCartStore();
   const { user } = useAuthStore();
   const { setProducts } = useProductStore();
-  
   const [isBuying, setIsBuying] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const router = useRouter();
@@ -106,7 +110,7 @@ export default function CarritoClient({ initialProducts }: Props) {
             <ShoppingBag size={40} className="opacity-20" style={{ color: 'var(--foreground)' }} />
           </div>
           <h2 className="text-2xl font-black mb-2 uppercase tracking-tight" style={{ color: 'var(--foreground)' }}>Tu carrito está vacío</h2>
-          <Link href="/productos" className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold block hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20 active:scale-95">Explorar productos</Link>
+          <Link href="/productos" className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold block hover:bg-blue-500 transition-all shadow-lg active:scale-95">Explorar productos</Link>
         </div>
       </div>
     );
@@ -154,7 +158,7 @@ export default function CarritoClient({ initialProducts }: Props) {
               <button 
                 onClick={() => { setIsBuying(true); router.push("/checkout"); }} 
                 disabled={isBuying}
-                className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-500 disabled:opacity-50 flex items-center justify-center transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-500 disabled:opacity-50 flex items-center justify-center transition-all shadow-lg active:scale-95"
               >
                 {isBuying ? "Cargando..." : "Finalizar Pedido"}
               </button>

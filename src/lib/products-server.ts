@@ -1,17 +1,15 @@
 import connectDB from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { Category } from "@/models/Category";
-// --- PARA EL LISTADO GENERAL (La que necesitas ahora) ---
+
+// 1. LISTADO GENERAL
 export async function getProductsServer() {
   await connectDB();
-  // Traemos todos los productos de la base de datos
   const products = await Product.find({}).lean();
-  
-  // Siempre usamos JSON.parse(JSON.stringify()) para limpiar los IDs de MongoDB
   return JSON.parse(JSON.stringify(products));
 }
 
-// --- PARA EL DETALLE DE UN PRODUCTO ---
+// 2. DETALLE DE UN PRODUCTO (Por ID)
 export async function getProductById(id: string) {
   try {
     await connectDB();
@@ -25,15 +23,45 @@ export async function getProductById(id: string) {
   }
 }
 
+// 3. PRODUCTOS RELACIONADOS (Misma categoría, excluyendo el actual)
+export async function getRelatedProducts(category: string, currentProductId: string) {
+  try {
+    await connectDB();
+    // Buscamos productos de la misma categoría, limitamos a 4 y excluimos el que ya estamos viendo
+    const related = await Product.find({ 
+      category: category, 
+      _id: { $ne: currentProductId } 
+    })
+    .limit(4)
+    .lean();
 
-export async function getCategoriesServer() {
-    try {
-      await connectDB();
-      // Traemos categorías, las ordenamos y limpiamos para el cliente
-      const categories = await Category.find({}).sort({ name: 1 }).lean();
-      return JSON.parse(JSON.stringify(categories));
-    } catch (error) {
-      console.error("Error en getCategoriesServer:", error);
-      return [];
-    }
+    return JSON.parse(JSON.stringify(related));
+  } catch (error) {
+    console.error("Error obteniendo relacionados:", error);
+    return [];
   }
+}
+
+// 4. PRODUCTOS EN OFERTA (Para la Home o banners)
+export async function getOfferProducts() {
+  try {
+    await connectDB();
+    const offers = await Product.find({ isOferta: true }).limit(8).lean();
+    return JSON.parse(JSON.stringify(offers));
+  } catch (error) {
+    console.error("Error obteniendo ofertas:", error);
+    return [];
+  }
+}
+
+// 5. LISTADO DE CATEGORÍAS
+export async function getCategoriesServer() {
+  try {
+    await connectDB();
+    const categories = await Category.find({}).sort({ name: 1 }).lean();
+    return JSON.parse(JSON.stringify(categories));
+  } catch (error) {
+    console.error("Error en getCategoriesServer:", error);
+    return [];
+  }
+}

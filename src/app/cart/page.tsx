@@ -3,7 +3,7 @@ import CarritoClient from "./CarritoClient";
 import { Suspense } from "react";
 
 export default async function CarritoPage() {
-  // Traemos los productos frescos del servidor para validar stock
+  // Traemos los productos frescos del servidor para validar stock y precios
   const products = await getProductsServer();
 
   return (
