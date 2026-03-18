@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { AiOutlinePlus, AiOutlineMinus } from "react-icons/ai";
-import { ShoppingBag, Trash2, AlertTriangle, ChevronLeft } from "lucide-react";
+import { ShoppingBag, Trash2, AlertTriangle, ChevronLeft, Truck, ShieldCheck, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useProductStore } from "@/store/useProductStore";
@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Product } from "@/types";
 import Swal from "sweetalert2";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Props {
   initialProducts: Product[];
@@ -35,7 +36,9 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
         position: 'top-end',
         timer: 3000,
         showConfirmButton: false,
-        timerProgressBar: true
+        timerProgressBar: true,
+        background: 'var(--card-bg)',
+        color: 'var(--foreground)'
       });
     } else {
       updateQuantity(item.id, quantity + 1, userId);
@@ -43,63 +46,87 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   };
 
   return (
-    <div className="p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center gap-4 border transition-all duration-300"
-         style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
+    <motion.div 
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="group p-6 rounded-[2.5rem] flex flex-col sm:flex-row items-center gap-8 border border-[var(--border-theme)] bg-[var(--card-bg)] transition-all duration-500 hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-none hover:border-blue-500/30"
+    >
       
-      {/* Contenedor Imagen y Título en Móvil */}
-      <div className="flex items-center w-full sm:w-auto gap-4">
-        <div className="relative bg-white p-2 rounded-xl w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
-          <Image src={item.image} alt={item.name} fill sizes="(max-width: 768px) 80px, 96px" className="object-contain p-2" />
-        </div>
-        <div className="sm:hidden flex-grow">
-             <h3 className="font-bold text-md line-clamp-" style={{ color: 'var(--foreground)' }}>{item.name}</h3>
-             <p className="text-blue-600 font-black mt-1">$ {price.toLocaleString('es-AR')}</p>
-        </div>
+      <div className="relative bg-neutral-500/5 dark:bg-white/5 rounded-[2rem] w-full sm:w-44 h-44 flex items-center justify-center shrink-0 overflow-hidden transition-transform duration-500 group-hover:scale-105">
+        <Image 
+          src={item.image} 
+          alt={item.name} 
+          fill 
+          sizes="(max-width: 768px) 100vw, 176px" 
+          className="object-contain p-4 drop-shadow-lg" 
+        />
       </div>
 
-      <div className="flex-grow w-full">
-        {/* Título en Desktop */}
-        <h3 className="hidden sm:block font-bold text-base mb-2 line-clamp-1" style={{ color: 'var(--foreground)' }}>{item.name}</h3>
+      <div className="flex-grow w-full flex flex-col justify-between py-2">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+          <div className="max-w-md">
+            <h3 className="font-bold text-xl sm:text-2xl tracking-tighter text-[var(--foreground)] leading-tight">
+              {item.name}
+            </h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 text-[var(--foreground)] mt-2">
+              REF: {item.id.slice(-6)}
+            </p>
+          </div>
+          <p className="hidden sm:block text-3xl font-black text-[var(--foreground)] tracking-tighter">
+            ${(price * quantity).toLocaleString('es-AR')}
+          </p>
+        </div>
         
-        <div className="flex items-center justify-between w-full mt-2 sm:mt-0">
+        <div className="flex items-center justify-between w-full">
           <div className="relative">
-            {showError && (
-              <div className="absolute -top-8 left-0 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-bounce flex items-center gap-1 z-10 font-bold whitespace-nowrap">
-                <AlertTriangle size={14} /> Solo hay {stock}
-              </div>
-            )}
-            <div className={`flex items-center border rounded-xl overflow-hidden transition-all ${showError ? 'border-red-500' : ''}`}
-                 style={{ borderColor: 'var(--border-theme)' }}>
-              <button onClick={() => updateQuantity(item.id, quantity - 1, userId)} 
-                      className="p-2.5 opacity-60 hover:opacity-100 disabled:opacity-20" 
-                      style={{ color: 'var(--foreground)' }}
-                      disabled={quantity <= 1}><AiOutlineMinus /></button>
-              <span className="px-4 font-black text-sm" style={{ color: 'var(--foreground)' }}>{quantity}</span>
-              <button onClick={handleIncrease} 
-                      className={`p-2.5 transition-colors ${quantity >= stock ? 'opacity-20' : 'text-blue-500 hover:bg-blue-500/10'}`}><AiOutlinePlus /></button>
+            <AnimatePresence>
+              {showError && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute -top-10 left-0 bg-red-600 text-white text-[9px] px-3 py-1.5 rounded-full shadow-xl flex items-center gap-1.5 z-10 font-black uppercase tracking-widest whitespace-nowrap"
+                >
+                  <AlertTriangle size={12} /> Stock: {stock} unidades
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            <div className={`flex items-center bg-neutral-500/5 dark:bg-white/5 rounded-2xl overflow-hidden border transition-all duration-300 ${showError ? 'border-red-500 shadow-lg shadow-red-500/20' : 'border-[var(--border-theme)]'}`}>
+              <button 
+                onClick={() => updateQuantity(item.id, quantity - 1, userId)} 
+                className="p-4 opacity-40 hover:opacity-100 hover:bg-white dark:hover:bg-neutral-800 transition-all disabled:opacity-10" 
+                disabled={quantity <= 1}
+              >
+                <AiOutlineMinus size={16} />
+              </button>
+              <span className="px-6 font-black text-base text-[var(--foreground)] min-w-[3.5rem] text-center">{quantity}</span>
+              <button 
+                onClick={handleIncrease} 
+                className={`p-4 transition-all ${quantity >= stock ? 'opacity-10' : 'text-blue-600 hover:bg-blue-600 hover:text-white'}`}
+              >
+                <AiOutlinePlus size={16} />
+              </button>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Precio en Desktop */}
-            <div className="hidden sm:block text-right">
-                <p className="text-lg font-black" style={{ color: 'var(--foreground)' }}>$ {(price * quantity).toLocaleString('es-AR')}</p>
+            <div className="sm:hidden text-right mr-2">
+                <p className="text-2xl font-black text-[var(--foreground)] tracking-tighter">${(price * quantity).toLocaleString('es-AR')}</p>
             </div>
             
-            <button onClick={() => removeFromCart(item.id, userId)} 
-                    className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all p-2.5 rounded-xl">
-                <Trash2 size={20} />
+            <button 
+              onClick={() => removeFromCart(item.id, userId)} 
+              className="group/trash bg-red-500/5 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-500 p-4 rounded-2xl border border-red-500/10 shadow-lg shadow-red-500/5"
+            >
+                <Trash2 size={20} className="group-hover/trash:scale-110 transition-transform" />
             </button>
           </div>
         </div>
-
-        {/* Subtotal en Móvil (solo visible abajo) */}
-        <div className="sm:hidden flex justify-between items-center mt-4 pt-3 border-t border-dashed border-[var(--border-theme)]">
-            <span className="text-[10px] uppercase font-black opacity-40" style={{ color: 'var(--foreground)' }}>Subtotal Producto</span>
-            <p className="text-lg font-black" style={{ color: 'var(--foreground)' }}>$ {(price * quantity).toLocaleString('es-AR')}</p>
-        </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -111,7 +138,9 @@ export default function CarritoClient({ initialProducts }: Props) {
   const [hydrated, setHydrated] = useState(false);
   const router = useRouter();
 
+  // EFECTO PARA IR ARRIBA AL CARGAR
   useEffect(() => {
+    window.scrollTo(0, 0);
     setHydrated(true);
     if (initialProducts) {
       setProducts(initialProducts);
@@ -125,82 +154,116 @@ export default function CarritoClient({ initialProducts }: Props) {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen pt-32 flex flex-col items-center" style={{ backgroundColor: 'var(--background)' }}>
-        <div className="p-12 rounded-[3rem] border text-center max-w-md w-full mx-4 shadow-xl" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
-          <div className="bg-blue-500/5 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShoppingBag size={40} className="opacity-20" style={{ color: 'var(--foreground)' }} />
+      <div className="min-h-screen pt-40 pb-20 flex flex-col items-center bg-[var(--background)] px-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-16 rounded-[4rem] border border-[var(--border-theme)] text-center max-w-lg w-full bg-[var(--card-bg)] shadow-2xl shadow-black/5"
+        >
+          <div className="bg-blue-600/10 w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-8 ring-1 ring-blue-600/20">
+            <ShoppingBag size={48} className="text-blue-600 opacity-40" />
           </div>
-          <h2 className="text-2xl font-black mb-6 uppercase tracking-tight" style={{ color: 'var(--foreground)' }}>Tu carrito está vacío</h2>
-          <Link href="/productos" className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest block hover:bg-blue-500 transition-all shadow-lg active:scale-95">Explorar Productos</Link>
-        </div>
+          <h2 className="text-3xl font-black mb-4 uppercase tracking-tighter text-[var(--foreground)]">Espacio Vacío</h2>
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-30 mb-10 text-[var(--foreground)]">Tu carrito está esperando ser llenado</p>
+          <Link 
+            href="/productos" 
+            className="bg-blue-600 text-white px-10 py-5 rounded-full font-black uppercase text-[10px] tracking-[0.3em] block hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+          >
+            Explorar Catálogo
+          </Link>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-28 pb-20 px-4 transition-colors duration-300" style={{ backgroundColor: 'var(--background)' }}>
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen pt-32 pb-24 px-6 bg-[var(--background)] transition-colors duration-500">
+      <div className="max-w-7xl mx-auto">
         
         <Link 
           href="/productos" 
-          className="flex items-center gap-2 mb-8 text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-all group w-fit"
-          style={{ color: 'var(--foreground)' }}
+          className="flex items-center gap-4 mb-12 text-[10px] font-black uppercase tracking-[0.4em] opacity-30 hover:opacity-100 hover:text-blue-600 transition-all group w-fit text-[var(--foreground)]"
         >
-          <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-          Continuar Comprando
+          <div className="p-2 rounded-full border border-[var(--border-theme)] group-hover:border-blue-600 transition-colors">
+            <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+          </div>
+          Seguir Comprando
         </Link>
 
-        <div className="flex items-baseline gap-3 mb-10">
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tighter" style={{ color: 'var(--foreground)' }}>MI CARRITO</h1>
-          <span className="text-sm font-bold text-blue-600">[{cart.length} ITEMS]</span>
+        <div className="flex flex-col md:flex-row md:items-end gap-4 mb-16">
+          <h1 className="text-6xl sm:text-8xl font-black tracking-[-0.06em] text-[var(--foreground)] uppercase leading-none">
+            Carrito
+          </h1>
+          <div className="flex items-center gap-3 pb-2">
+            <span className="h-[2px] w-12 bg-blue-600"></span>
+            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-600">
+              {cart.length} Selección{cart.length !== 1 ? 'es' : ''}
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-8 space-y-4">
-            {cart.map((item) => (
-              <CartItemRow 
-                key={item.id} 
-                item={item} 
-                updateQuantity={updateQuantity} 
-                removeFromCart={removeFromCart} 
-                userId={user?.id || (user as any)?._id} 
-              />
-            ))}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          <div className="lg:col-span-8 space-y-6">
+            <AnimatePresence mode="popLayout">
+              {cart.map((item) => (
+                <CartItemRow 
+                  key={item.id} 
+                  item={item} 
+                  updateQuantity={updateQuantity} 
+                  removeFromCart={removeFromCart} 
+                  userId={user?.id || (user as any)?._id} 
+                />
+              ))}
+            </AnimatePresence>
           </div>
 
           <div className="lg:col-span-4">
-            <div className="p-8 rounded-[2.5rem] border sticky top-28 shadow-2xl" 
-                 style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-8 opacity-40 text-center" style={{ color: 'var(--foreground)' }}>Resumen de orden</h2>
+            <div className="p-10 rounded-[3rem] border border-[var(--border-theme)] sticky top-32 bg-[var(--card-bg)] shadow-2xl shadow-black/5 dark:shadow-none">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] mb-10 opacity-30 text-center text-[var(--foreground)]">
+                Resumen de Compra
+              </h2>
               
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between" style={{ color: 'var(--foreground)' }}>
-                  <span className="text-xs font-bold uppercase opacity-60">Subtotal</span>
-                  <span className="font-black">$ {subtotal.toLocaleString('es-AR')}</span>
+              <div className="space-y-6 mb-10">
+                <div className="flex justify-between text-[var(--foreground)] items-center">
+                  <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Subtotal</span>
+                  <span className="text-xl font-bold tracking-tighter">$ {subtotal.toLocaleString('es-AR')}</span>
                 </div>
-                <div className="flex justify-between items-center bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Envío a domicilio</span>
-                  <span className="font-black text-emerald-600 text-sm">GRATIS</span>
+                
+                <div className="flex justify-between items-center p-5 rounded-[1.5rem] bg-emerald-500/5 border border-emerald-500/10">
+                  <div className="flex items-center gap-3 text-emerald-600">
+                    <Truck size={18} />
+                    <span className="text-[9px] font-black uppercase tracking-widest leading-none">Envío Estándar</span>
+                  </div>
+                  <span className="font-black text-emerald-600 text-xs">GRATIS</span>
                 </div>
               </div>
 
-              <div className="flex justify-between items-end pt-6 border-t mb-10" style={{ color: 'var(--foreground)', borderColor: 'var(--border-theme)' }}>
-                <span className="text-xs font-black uppercase tracking-widest opacity-60">Total Final</span>
-                <span className="text-4xl font-black tracking-tighter text-blue-600">$ {subtotal.toLocaleString('es-AR')}</span>
+              <div className="flex flex-col gap-2 pt-8 border-t border-[var(--border-theme)] mb-10 text-[var(--foreground)]">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Valor Total</span>
+                <span className="text-5xl font-black tracking-tighter text-blue-600">
+                   $ {subtotal.toLocaleString('es-AR')}
+                </span>
               </div>
               
               <div className="space-y-4">
                 <button 
                   onClick={() => { setIsBuying(true); router.push("/checkout"); }} 
                   disabled={isBuying}
-                  className="w-full bg-blue-600 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+                  className="group relative w-full bg-blue-600 text-white py-6 rounded-full font-black uppercase tracking-[0.3em] text-[10px] hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center transition-all shadow-2xl shadow-blue-600/20 active:scale-95 overflow-hidden"
                 >
-                  {isBuying ? "Procesando..." : "Finalizar Compra"}
+                  <span className="relative z-10 flex items-center gap-3">
+                    {isBuying ? "Procesando Pedido..." : "Finalizar Compra"}
+                    <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
+                  </span>
+                  <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
                 </button>
 
-                <p className="text-[9px] text-center opacity-40 font-bold uppercase tracking-tight" style={{ color: 'var(--foreground)' }}>
-                  Garantía oficial y compra segura protegida
-                </p>
+                <div className="flex items-center justify-center gap-4 pt-4 opacity-20">
+                    <ShieldCheck size={16} className="text-[var(--foreground)]" />
+                    <p className="text-[8px] font-black uppercase tracking-widest text-[var(--foreground)]">
+                      Transacción Segura Nivel 4
+                    </p>
+                </div>
               </div>
             </div>
           </div>
