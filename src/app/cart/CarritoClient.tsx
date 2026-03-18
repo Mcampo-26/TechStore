@@ -43,39 +43,61 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
   };
 
   return (
-    <div className="p-4 rounded-xl shadow-sm flex items-center gap-4 border transition-all duration-300"
+    <div className="p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center gap-4 border transition-all duration-300"
          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
       
-      <div className="relative bg-white p-2 rounded-lg w-24 h-24 flex items-center justify-center shrink-0 overflow-hidden">
-        <Image src={item.image} alt={item.name} fill sizes="96px" className="object-contain p-2" />
-      </div>
-
-      <div className="flex-grow">
-        <h3 className="font-medium text-sm md:text-base line-clamp-1" style={{ color: 'var(--foreground)' }}>{item.name}</h3>
-        <div className="flex items-center justify-between mt-4">
-          <div className="relative">
-            {showError && (
-              <div className="absolute top-10 left-0 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-bounce flex items-center gap-1 z-10 font-bold whitespace-nowrap">
-                <AlertTriangle size={14} /> Solo hay {stock} disponibles
-              </div>
-            )}
-            <div className={`flex items-center border rounded-lg overflow-hidden transition-all ${showError ? 'border-red-500' : ''}`}
-                 style={{ borderColor: 'var(--border-theme)' }}>
-              <button onClick={() => updateQuantity(item.id, quantity - 1, userId)} 
-                      className="p-2 opacity-60 hover:opacity-100 disabled:opacity-20" 
-                      style={{ color: 'var(--foreground)' }}
-                      disabled={quantity <= 1}><AiOutlineMinus /></button>
-              <span className="px-4 font-bold text-sm" style={{ color: 'var(--foreground)' }}>{quantity}</span>
-              <button onClick={handleIncrease} 
-                      className={`p-2 transition-colors ${quantity >= stock ? 'opacity-20' : 'text-blue-500 hover:bg-blue-500/10'}`}><AiOutlinePlus /></button>
-            </div>
-          </div>
-          <button onClick={() => removeFromCart(item.id, userId)} 
-                  className="opacity-40 hover:opacity-100 hover:text-red-500 transition-all p-2"><Trash2 size={20} /></button>
+      {/* Contenedor Imagen y Título en Móvil */}
+      <div className="flex items-center w-full sm:w-auto gap-4">
+        <div className="relative bg-white p-2 rounded-xl w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
+          <Image src={item.image} alt={item.name} fill sizes="(max-width: 768px) 80px, 96px" className="object-contain p-2" />
+        </div>
+        <div className="sm:hidden flex-grow">
+             <h3 className="font-bold text-md line-clamp-" style={{ color: 'var(--foreground)' }}>{item.name}</h3>
+             <p className="text-blue-600 font-black mt-1">$ {price.toLocaleString('es-AR')}</p>
         </div>
       </div>
-      <div className="text-right min-w-[100px]">
-        <p className="text-xl font-light" style={{ color: 'var(--foreground)' }}>$ {(price * quantity).toLocaleString('es-AR')}</p>
+
+      <div className="flex-grow w-full">
+        {/* Título en Desktop */}
+        <h3 className="hidden sm:block font-bold text-base mb-2 line-clamp-1" style={{ color: 'var(--foreground)' }}>{item.name}</h3>
+        
+        <div className="flex items-center justify-between w-full mt-2 sm:mt-0">
+          <div className="relative">
+            {showError && (
+              <div className="absolute -top-8 left-0 bg-red-600 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-bounce flex items-center gap-1 z-10 font-bold whitespace-nowrap">
+                <AlertTriangle size={14} /> Solo hay {stock}
+              </div>
+            )}
+            <div className={`flex items-center border rounded-xl overflow-hidden transition-all ${showError ? 'border-red-500' : ''}`}
+                 style={{ borderColor: 'var(--border-theme)' }}>
+              <button onClick={() => updateQuantity(item.id, quantity - 1, userId)} 
+                      className="p-2.5 opacity-60 hover:opacity-100 disabled:opacity-20" 
+                      style={{ color: 'var(--foreground)' }}
+                      disabled={quantity <= 1}><AiOutlineMinus /></button>
+              <span className="px-4 font-black text-sm" style={{ color: 'var(--foreground)' }}>{quantity}</span>
+              <button onClick={handleIncrease} 
+                      className={`p-2.5 transition-colors ${quantity >= stock ? 'opacity-20' : 'text-blue-500 hover:bg-blue-500/10'}`}><AiOutlinePlus /></button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Precio en Desktop */}
+            <div className="hidden sm:block text-right">
+                <p className="text-lg font-black" style={{ color: 'var(--foreground)' }}>$ {(price * quantity).toLocaleString('es-AR')}</p>
+            </div>
+            
+            <button onClick={() => removeFromCart(item.id, userId)} 
+                    className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all p-2.5 rounded-xl">
+                <Trash2 size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Subtotal en Móvil (solo visible abajo) */}
+        <div className="sm:hidden flex justify-between items-center mt-4 pt-3 border-t border-dashed border-[var(--border-theme)]">
+            <span className="text-[10px] uppercase font-black opacity-40" style={{ color: 'var(--foreground)' }}>Subtotal Producto</span>
+            <p className="text-lg font-black" style={{ color: 'var(--foreground)' }}>$ {(price * quantity).toLocaleString('es-AR')}</p>
+        </div>
       </div>
     </div>
   );
@@ -108,30 +130,29 @@ export default function CarritoClient({ initialProducts }: Props) {
           <div className="bg-blue-500/5 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
             <ShoppingBag size={40} className="opacity-20" style={{ color: 'var(--foreground)' }} />
           </div>
-          <h2 className="text-2xl font-black mb-2 uppercase tracking-tight" style={{ color: 'var(--foreground)' }}>Tu carrito está vacío</h2>
-          <Link href="/" className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold block hover:bg-blue-500 transition-all shadow-lg active:scale-95">Ir al inicio</Link>
+          <h2 className="text-2xl font-black mb-6 uppercase tracking-tight" style={{ color: 'var(--foreground)' }}>Tu carrito está vacío</h2>
+          <Link href="/productos" className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest block hover:bg-blue-500 transition-all shadow-lg active:scale-95">Explorar Productos</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-28 pb-12 px-4 transition-colors duration-300" style={{ backgroundColor: 'var(--background)' }}>
+    <div className="min-h-screen pt-28 pb-20 px-4 transition-colors duration-300" style={{ backgroundColor: 'var(--background)' }}>
       <div className="max-w-6xl mx-auto">
         
-        {/* BOTÓN VOLVER AL INICIO */}
         <Link 
-          href="/" 
-          className="flex items-center gap-2 mb-6 text-sm font-bold opacity-50 hover:opacity-100 transition-all group w-fit"
+          href="/productos" 
+          className="flex items-center gap-2 mb-8 text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-all group w-fit"
           style={{ color: 'var(--foreground)' }}
         >
-          <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-          VOLVER AL INICIO
+          <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+          Continuar Comprando
         </Link>
 
-        <div className="flex items-end gap-3 mb-10">
-          <h1 className="text-4xl font-black tracking-tighter" style={{ color: 'var(--foreground)' }}>CARRITO</h1>
-          <span className="text-sm font-bold text-blue-600 mb-1">({cart.length} items)</span>
+        <div className="flex items-baseline gap-3 mb-10">
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tighter" style={{ color: 'var(--foreground)' }}>MI CARRITO</h1>
+          <span className="text-sm font-bold text-blue-600">[{cart.length} ITEMS]</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -148,40 +169,38 @@ export default function CarritoClient({ initialProducts }: Props) {
           </div>
 
           <div className="lg:col-span-4">
-            <div className="p-8 rounded-[2.5rem] border sticky top-28 shadow-xl" 
+            <div className="p-8 rounded-[2.5rem] border sticky top-28 shadow-2xl" 
                  style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-8 opacity-40" style={{ color: 'var(--foreground)' }}>Resumen de compra</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-8 opacity-40 text-center" style={{ color: 'var(--foreground)' }}>Resumen de orden</h2>
+              
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between" style={{ color: 'var(--foreground)' }}>
-                  <span className="text-sm opacity-60">Subtotal</span>
-                  <span className="font-medium">$ {subtotal.toLocaleString('es-AR')}</span>
+                  <span className="text-xs font-bold uppercase opacity-60">Subtotal</span>
+                  <span className="font-black">$ {subtotal.toLocaleString('es-AR')}</span>
                 </div>
-                <div className="flex justify-between text-emerald-500">
-                  <span className="text-sm font-bold uppercase tracking-widest text-[10px]">Envío</span>
-                  <span className="font-bold">Gratis</span>
+                <div className="flex justify-between items-center bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Envío a domicilio</span>
+                  <span className="font-black text-emerald-600 text-sm">GRATIS</span>
                 </div>
               </div>
-              <div className="flex justify-between items-end pt-6 border-t mb-8" style={{ color: 'var(--foreground)', borderColor: 'var(--border-theme)' }}>
-                <span className="text-sm font-bold opacity-60 uppercase tracking-widest">Total</span>
-                <span className="text-3xl font-black tracking-tighter">$ {subtotal.toLocaleString('es-AR')}</span>
+
+              <div className="flex justify-between items-end pt-6 border-t mb-10" style={{ color: 'var(--foreground)', borderColor: 'var(--border-theme)' }}>
+                <span className="text-xs font-black uppercase tracking-widest opacity-60">Total Final</span>
+                <span className="text-4xl font-black tracking-tighter text-blue-600">$ {subtotal.toLocaleString('es-AR')}</span>
               </div>
               
               <div className="space-y-4">
                 <button 
                   onClick={() => { setIsBuying(true); router.push("/checkout"); }} 
                   disabled={isBuying}
-                  className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-500 disabled:opacity-50 flex items-center justify-center transition-all shadow-lg active:scale-95"
+                  className="w-full bg-blue-600 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center transition-all shadow-xl shadow-blue-600/20 active:scale-95"
                 >
-                  {isBuying ? "Cargando..." : "Finalizar Pedido"}
+                  {isBuying ? "Procesando..." : "Finalizar Compra"}
                 </button>
 
-                <Link 
-                  href="/productos"
-                  className="w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-all text-center block"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Continuar comprando
-                </Link>
+                <p className="text-[9px] text-center opacity-40 font-bold uppercase tracking-tight" style={{ color: 'var(--foreground)' }}>
+                  Garantía oficial y compra segura protegida
+                </p>
               </div>
             </div>
           </div>
