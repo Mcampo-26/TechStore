@@ -6,6 +6,7 @@ import Image from 'next/image'; // <--- El componente estrella de Next.js
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
+import Swal from "sweetalert2"
 import {
     ArrowLeft, ShoppingCart, ShieldCheck, Star,
     CheckCircle2, RotateCcw, Truck, Info, Zap
@@ -48,15 +49,45 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
         : precioOriginal;
     const hasStock = product.stock > 0;
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         const userId = user?.id || (user as any)?._id;
-        addToCart({ ...product, price: precioFinal }, userId);
-    };
+        
+        const result = await addToCart({ ...product, price: precioFinal }, userId);
+      
+        if (result && !result.success) {
+          // Detectamos si el sistema está en modo oscuro
+          const isDark = document.documentElement.classList.contains('dark');
+      
+          Swal.fire({
+            title: '¡STOCK LIMITADO!',
+            text: `Lo sentimos, solo tenemos ${result.limit} unidades disponibles de este producto.`,
+            icon: 'warning',
+            position: 'center',
+            showConfirmButton: true,
+            confirmButtonText: 'ENTENDIDO',
+            confirmButtonColor: '#2563eb',
+      
+            // --- SOLUCIÓN DEFINITIVA AL FONDO MEZCLADO ---
+            // Forzamos colores hexadecimales sólidos para que no haya transparencia
+            background: isDark ? '#222222' : '#ffffff',
+            color: isDark ? '#ffffff' : '#000000',
+            
+            customClass: {
+              // Añadimos border sólido para separar bien de la imagen de fondo
+              popup: 'rounded-[2rem] border-2 border-gray-200 dark:border-white/10 shadow-2xl p-8', 
+              title: 'font-black tracking-tighter uppercase italic text-2xl',
+              confirmButton: 'rounded-xl px-10 py-3 font-bold uppercase tracking-widest text-xs',
+              htmlContainer: 'font-medium'
+            },
+            // Oscurecemos el fondo de la página para que la alerta resalte más
+            backdrop: `rgba(0,0,0,0.85)` 
+          });
+        }
+      };
 
     const handleBuyNow = () => {
         if (!hasStock) return;
-        setIsBuyingNow(true);
-        handleAddToCart(); // Agregamos al carrito antes de ir al checkout
+        setIsBuyingNow(true);        
         setTimeout(() => router.push("/checkout"), 500);
     };
 
@@ -108,9 +139,12 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
                         
                         {/* CAPA DE LUPA */}
                         <div 
-                            className="absolute inset-0 pointer-events-none transition-opacity duration-300"
-                            style={zoomStyle}
-                        />
+  className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+  style={{
+    ...zoomStyle, 
+    backgroundSize: '150%' // Esto sobrescribe el zoom y lo hace más pequeño
+  }}
+/>
 
                         {esOferta && (
                             <div className="absolute top-6 left-6 bg-blue-600 text-white px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-tighter flex items-center gap-2 shadow-xl shadow-blue-600/30">

@@ -18,7 +18,7 @@ interface CartState {
   closeDrawer: () => void;
   setCart: (newCart: CartItem[]) => void;
   clearCart: () => void;
-  addToCart: (product: any, userId?: string) => Promise<{ success: boolean; limit?: number }>;
+  addToCart: (product: any, userId?: string, showDrawer?: boolean) => Promise<{ success: boolean; limit?: number }>;
   removeFromCart: (productId: string, userId?: string) => Promise<void>;
   updateQuantity: (productId: string, newQuantity: number, userId?: string) => Promise<void>;
   revalidateCartStock: (allProducts?: any[]) => void;
@@ -58,7 +58,6 @@ export const useCartStore = create<CartState>()(
           
           if (fresh) {
             const freshStock = Number(fresh.stock);
-            // Calculamos precio de oferta por si cambió mientras no estaba conectado
             const priceBase = Number(fresh.price);
             const discountedPrice = fresh.isOferta 
               ? priceBase * (1 - (fresh.descuento || 0) / 100) 
@@ -79,13 +78,14 @@ export const useCartStore = create<CartState>()(
         set({ cart: updatedCart });
       },
 
-      addToCart: async (product, userId) => {
+      addToCart: async (product, userId, showDrawer = true) => {
         const productId = product._id || product.id;
         const currentCart = get().cart;
         const existing = currentCart.find((item) => item.id === productId);
         const availableStock = Number(product.stock);
 
-        if (existing && existing.quantity >= availableStock) {
+        // SI YA NO HAY STOCK O SE ALCANZÓ EL LÍMITE
+        if (availableStock <= 0 || (existing && existing.quantity >= availableStock)) {
           return { success: false, limit: availableStock };
         }
 
@@ -111,7 +111,11 @@ export const useCartStore = create<CartState>()(
           }];
         }
 
-        set({ cart: updatedCart, isDrawerOpen: true });
+        set({ 
+          cart: updatedCart, 
+          isDrawerOpen: showDrawer ? true : get().isDrawerOpen 
+        });
+
         if (userId) get().syncWithDB(userId, updatedCart);
         return { success: true };
       },

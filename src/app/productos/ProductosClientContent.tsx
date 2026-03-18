@@ -59,11 +59,18 @@ export default function ProductosClientContent({
                        alt={product.name} 
                        className="w-full h-full object-contain transition-transform group-hover:scale-110" 
                      />
-                     {product.isOferta && (
-                       <span className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase">
-                         Oferta
-                       </span>
-                     )}
+                    {product.isOferta && (
+  <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-orange-500 text-white text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-[0_4px_10px_rgba(220,38,38,0.3)] animate-pulse">
+    <svg 
+      viewBox="0 0 24 24" 
+      fill="currentColor" 
+      className="w-3 h-3"
+    >
+      <path d="M13 10V3L4 14H11V21L20 10H13Z" />
+    </svg>
+    <span>Oferta</span>
+  </div>
+)}
                    </div>
 
                    <h3 className="font-bold text-lg line-clamp-2 flex-grow" style={{ color: 'var(--foreground)' }}>

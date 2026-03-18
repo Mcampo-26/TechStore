@@ -1,39 +1,79 @@
-"use client";
 
-import React, { useEffect, useState } from "react";
-import { X, Save, PlusCircle, Edit3, Zap, Image as ImageIcon, Check } from "lucide-react";
-import { useCategoryStore } from "@/store/useCategoryStore";
-import Swal from "sweetalert2";
+  "use client";
+  
+  import React, { useEffect, useState } from "react";
+  import { X, Save, PlusCircle, Edit3, Zap, Image as ImageIcon, Check } from "lucide-react";
+  import { useCategoryStore } from "@/store/useCategoryStore";
+  import Swal from "sweetalert2";
+  
+  interface EditProductModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    product: any;
+    setProduct: (product: any) => void;
+    onUpdate: (e: any) => void; // Cambiado a any para manejar el evento manual
+    isCreating?: boolean;
+  }
+  
+  export const EditProductModal = ({
+    isOpen,
+    onClose,
+    product,
+    setProduct,
+    onUpdate,
+    isCreating = false
+  }: EditProductModalProps) => {
+    const { categories, addCategory } = useCategoryStore();
+    const [isAddingNew, setIsAddingNew] = useState(false);
+    const [newCatName, setNewCatName] = useState("");
+  
+    useEffect(() => {
+      if (isOpen) {
+        setIsAddingNew(false);
+        setNewCatName("");
+      }
+    }, [isOpen]);
+  
+    if (!isOpen || !product) return null;
+  
+    // --- NUEVA FUNCIÓN DE VALIDACIÓN ---
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+  
+      // 1. Validaciones básicas obligatorias
+      if (!product.name?.trim() || !product.category || !product.price || product.stock === undefined) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Campos incompletos',
+          text: 'Por favor, completa nombre, categoría, precio y stock.',
+          confirmButtonColor: '#2563eb'
+        });
+        return;
+      }
+  
+      // 2. VALIDACIÓN DE OFERTA (Lo que pediste)
+      if (product.isOferta) {
+        const desc = Number(product.descuento);
+        if (!desc || desc <= 0 || desc > 100) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Falta el descuento',
+            text: 'Si el producto está en oferta, debes ingresar un porcentaje de descuento válido (1-100).',
+            confirmButtonColor: '#2563eb'
+          });
+          return;
+        }
+      }
+  
+      // Si todo está bien, llamamos a la función original que guarda en la DB
+      onUpdate(e);
+    };
 
-interface EditProductModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  product: any;
-  setProduct: (product: any) => void;
-  onUpdate: (e: React.FormEvent) => void;
-  isCreating?: boolean;
-}
 
-export const EditProductModal = ({
-  isOpen,
-  onClose,
-  product,
-  setProduct,
-  onUpdate,
-  isCreating = false
-}: EditProductModalProps) => {
-  const { categories, addCategory } = useCategoryStore();
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newCatName, setNewCatName] = useState("");
 
-  useEffect(() => {
-    if (isOpen) {
-      setIsAddingNew(false);
-      setNewCatName("");
-    }
-  }, [isOpen]);
 
-  if (!isOpen || !product) return null;
+
+
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -170,10 +210,14 @@ export const EditProductModal = ({
           <button type="button" onClick={onClose} className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-[var(--border-theme)] opacity-50 hover:opacity-100 transition-all">
             Descartar
           </button>
-          <button type="button" onClick={onUpdate} className="flex-[2] py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95">
-            <Save size={18} />
-            {isCreating ? "Confirmar y Publicar" : "Guardar Cambios"}
-          </button>
+          <button 
+  type="button" 
+  onClick={handleSubmit} // <--- Solo llamamos a handleSubmit
+  className="flex-[2] py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"
+>
+  <Save size={18} />
+  {isCreating ? "Confirmar y Publicar" : "Guardar Cambios"}
+</button>
         </div>
       </div>
     </div>

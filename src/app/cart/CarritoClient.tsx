@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { AiOutlinePlus, AiOutlineMinus } from "react-icons/ai";
-import { ShoppingBag, Trash2, AlertTriangle } from "lucide-react";
+import { ShoppingBag, Trash2, AlertTriangle, ChevronLeft } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useProductStore } from "@/store/useProductStore";
@@ -27,7 +27,6 @@ const CartItemRow = ({ item, updateQuantity, removeFromCart, userId }: any) => {
       setShowError(true);
       setTimeout(() => setShowError(false), 2000);
       
-      // Alerta de stock máximo alcanzado
       Swal.fire({
         title: '¡Límite alcanzado!',
         text: `Solo tenemos ${stock} unidades disponibles.`,
@@ -110,7 +109,7 @@ export default function CarritoClient({ initialProducts }: Props) {
             <ShoppingBag size={40} className="opacity-20" style={{ color: 'var(--foreground)' }} />
           </div>
           <h2 className="text-2xl font-black mb-2 uppercase tracking-tight" style={{ color: 'var(--foreground)' }}>Tu carrito está vacío</h2>
-          <Link href="/productos" className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold block hover:bg-blue-500 transition-all shadow-lg active:scale-95">Explorar productos</Link>
+          <Link href="/" className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold block hover:bg-blue-500 transition-all shadow-lg active:scale-95">Ir al inicio</Link>
         </div>
       </div>
     );
@@ -119,6 +118,17 @@ export default function CarritoClient({ initialProducts }: Props) {
   return (
     <div className="min-h-screen pt-28 pb-12 px-4 transition-colors duration-300" style={{ backgroundColor: 'var(--background)' }}>
       <div className="max-w-6xl mx-auto">
+        
+        {/* BOTÓN VOLVER AL INICIO */}
+        <Link 
+          href="/" 
+          className="flex items-center gap-2 mb-6 text-sm font-bold opacity-50 hover:opacity-100 transition-all group w-fit"
+          style={{ color: 'var(--foreground)' }}
+        >
+          <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          VOLVER AL INICIO
+        </Link>
+
         <div className="flex items-end gap-3 mb-10">
           <h1 className="text-4xl font-black tracking-tighter" style={{ color: 'var(--foreground)' }}>CARRITO</h1>
           <span className="text-sm font-bold text-blue-600 mb-1">({cart.length} items)</span>
@@ -155,13 +165,24 @@ export default function CarritoClient({ initialProducts }: Props) {
                 <span className="text-sm font-bold opacity-60 uppercase tracking-widest">Total</span>
                 <span className="text-3xl font-black tracking-tighter">$ {subtotal.toLocaleString('es-AR')}</span>
               </div>
-              <button 
-                onClick={() => { setIsBuying(true); router.push("/checkout"); }} 
-                disabled={isBuying}
-                className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-500 disabled:opacity-50 flex items-center justify-center transition-all shadow-lg active:scale-95"
-              >
-                {isBuying ? "Cargando..." : "Finalizar Pedido"}
-              </button>
+              
+              <div className="space-y-4">
+                <button 
+                  onClick={() => { setIsBuying(true); router.push("/checkout"); }} 
+                  disabled={isBuying}
+                  className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-500 disabled:opacity-50 flex items-center justify-center transition-all shadow-lg active:scale-95"
+                >
+                  {isBuying ? "Cargando..." : "Finalizar Pedido"}
+                </button>
+
+                <Link 
+                  href="/productos"
+                  className="w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-all text-center block"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  Continuar comprando
+                </Link>
+              </div>
             </div>
           </div>
         </div>
