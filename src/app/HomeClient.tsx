@@ -1,23 +1,34 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Search, Truck, ShieldCheck, CreditCard, Clock } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Truck, ShieldCheck, CreditCard, Clock } from 'lucide-react';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Product } from '@/types';
 import { BrandBanner } from '@/components/Home/BrandBanner';
 import { PromoBanner } from '@/components/Home/PromoBanner';
+import { useProductStore } from '@/store/useProductStore'; // Importamos el store
+import { SearchInput } from '@/components/layout/SearchInput'; // Importamos tu nuevo buscador
 
 interface Props {
   initialProducts: Product[];
 }
 
 export default function HomeClient({ initialProducts }: Props) {
-  const [searchTerm, setSearchTerm] = useState('');
+  // Traemos lo necesario del Store
+  const { filteredProducts, setProducts, searchQuery } = useProductStore();
 
-  // El filtrado ahora es instantáneo sobre los productos que ya llegaron
-  const filteredProducts = initialProducts.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Sincronizamos los productos destacados con el store al cargar
+  useEffect(() => {
+    if (initialProducts) {
+      setProducts(initialProducts);
+    }
+  }, [initialProducts, setProducts]);
+
+  // Usamos filteredProducts del store para la grilla
+  // Si el store está vacío al inicio, usamos initialProducts como fallback
+  const displayProducts = (filteredProducts.length === 0 && searchQuery === "") 
+    ? initialProducts 
+    : filteredProducts;
 
   return (
     <div className="transition-colors duration-300" style={{ backgroundColor: 'var(--background)' }}>
@@ -50,36 +61,24 @@ export default function HomeClient({ initialProducts }: Props) {
             PRODUCTOS <span className="text-blue-600">DESTACADOS</span>
           </h2>
 
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" size={18} />
-            <input 
-              type="text"
-              placeholder="Buscar en la tienda..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-xl outline-none transition-all text-sm"
-              style={{ 
-                backgroundColor: 'var(--card-bg)', 
-                borderColor: 'var(--border-theme)',
-                color: 'var(--foreground)' 
-              }}
-            />
+          {/* REEMPLAZO: Ahora usamos el SearchInput unificado */}
+          <div className="w-full md:w-80">
+            <SearchInput />
           </div>
         </div>
 
-        {/* Grilla de productos */}
+        {/* Grilla de productos usando el Store */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {filteredProducts.map((product) => (
-            // IMPORTANTE: Asegúrate de usar el id normalizado
+          {displayProducts.map((product) => (
             <ProductCard key={product.id || (product as any)._id} product={product} />
           ))}
         </div>
 
-        {filteredProducts.length === 0 && (
+        {displayProducts.length === 0 && (
           <div className="text-center py-20 rounded-[2rem] border border-dashed"
                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
             <p className="opacity-50 text-lg" style={{ color: 'var(--foreground)' }}>
-              No encontramos resultados para "<span className="font-bold opacity-100">{searchTerm}</span>"
+              No encontramos resultados para "<span className="font-bold opacity-100">{searchQuery}</span>"
             </p>
           </div>
         )}
