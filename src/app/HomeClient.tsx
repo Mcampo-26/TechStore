@@ -31,7 +31,7 @@ export default function HomeClient({ initialProducts }: Props) {
     : filteredProducts;
 
   return (
-    <div className="transition-colors duration-300" style={{ backgroundColor: 'var(--background)' }}>
+    <div className="transition-colors duration-300 mt-10" style={{ backgroundColor: 'var(--background)' }}>
       <PromoBanner />
 
       {/* Sección de Beneficios */}
