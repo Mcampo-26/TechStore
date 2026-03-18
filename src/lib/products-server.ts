@@ -1,14 +1,31 @@
 import connectDB from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { Category } from "@/models/Category";
-
+import { unstable_cache } from 'next/cache';
 // 1. LISTADO GENERAL
-export async function getProductsServer() {
-  await connectDB();
-  const products = await Product.find({}).lean();
-  return JSON.parse(JSON.stringify(products));
-}
+export const getProductsServer = unstable_cache(
+  async () => {
+    try {
+      await connectDB();
+      
+      // Traemos productos, ordenados por los más nuevos
+      const products = await Product.find({})
+        .sort({ createdAt: -1 })
+        .lean();
 
+      // Limpiamos los IDs de MongoDB para evitar errores de serialización
+      return JSON.parse(JSON.stringify(products));
+    } catch (error) {
+      console.error("CRITICAL_DB_ERROR:", error);
+      return [];
+    }
+  },
+  ["products-list"], // Key única para el cache
+  { 
+    revalidate: 3600, // Revalida cada hora de forma pasiva
+    tags: ["products"] // Tag para forzar actualización desde el Admin
+  }
+);
 // 2. DETALLE DE UN PRODUCTO (Por ID)
 export async function getProductById(id: string) {
   try {
