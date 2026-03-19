@@ -11,6 +11,8 @@ import { useProductStore } from '@/store/useProductStore';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { TechLoader } from '@/components/ui/TechLoader'; // Ajusta la ruta si es necesario
+import { AnimatePresence } from 'framer-motion'; // Asegúrate de tener esto importado
 
 interface NavbarProps {
   categories: any[];
@@ -27,6 +29,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+ 
 
   // CONFIGURACIÓN DE ALTURA MENÚ LATERAL
   const sidebarMaxHeight = '85vh'; 
@@ -73,6 +76,9 @@ export const Navbar = ({ categories }: NavbarProps) => {
   return (
     <>
       {isLoggingOut && <LoadingOverlay message="Cerrando sesión..." />}
+      <AnimatePresence>
+      {isLoggingOut && <TechLoader mode="logout" />}
+    </AnimatePresence>
 
       {/* NAVBAR PRINCIPAL */}
       <nav 
