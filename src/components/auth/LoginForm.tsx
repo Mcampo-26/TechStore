@@ -52,7 +52,12 @@ export const LoginForm = ({ onStartLoading, onLoginError }: LoginFormProps) => {
          </h2>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form 
+        onSubmit={handleSubmit(onSubmit)} 
+        className="space-y-6"
+        method="POST"
+        action="#"
+      >
         {error && (
           <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center">
             {error}
@@ -60,8 +65,11 @@ export const LoginForm = ({ onStartLoading, onLoginError }: LoginFormProps) => {
         )}
         
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2"
-                 style={{ color: 'var(--foreground)' }}>
+          <label 
+            htmlFor="email"
+            className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2"
+            style={{ color: 'var(--foreground)' }}
+          >
             Correo Electrónico
           </label>
           <div className="relative group">
@@ -70,7 +78,10 @@ export const LoginForm = ({ onStartLoading, onLoginError }: LoginFormProps) => {
             </div>
             <input 
               {...register('email')} 
+              id="email"
+              name="email"
               type="email" 
+              autoComplete="username"
               placeholder="ejemplo@correo.com" 
               className="w-full rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none transition-all border-2 bg-transparent focus:border-blue-500"
               style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
@@ -80,8 +91,11 @@ export const LoginForm = ({ onStartLoading, onLoginError }: LoginFormProps) => {
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2"
-                 style={{ color: 'var(--foreground)' }}>
+          <label 
+            htmlFor="password"
+            className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-2"
+            style={{ color: 'var(--foreground)' }}
+          >
             Contraseña
           </label>
           <div className="relative group">
@@ -90,7 +104,10 @@ export const LoginForm = ({ onStartLoading, onLoginError }: LoginFormProps) => {
             </div>
             <input 
               {...register('password')} 
+              id="password"
+              name="password"
               type="password" 
+              autoComplete="current-password"
               placeholder="••••••••" 
               className="w-full rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none transition-all border-2 bg-transparent focus:border-blue-500"
               style={{ borderColor: 'var(--border-theme)', color: 'var(--foreground)' }}
