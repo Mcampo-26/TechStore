@@ -83,7 +83,7 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
           >
             <LoaderProducts 
               productName="CATÁLOGO" 
-              category="SISTEMA CENTRAL" 
+       
             />
           </motion.div>
         )}
