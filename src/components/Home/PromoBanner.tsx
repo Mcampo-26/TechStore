@@ -8,21 +8,15 @@ export const PromoBanner = () => {
   return (
     <div className="pt-12 md:pt-24 max-w-7xl mx-auto px-4 md:px-6">
       
-      {/* CAMBIO 1: El fondo ahora usa var(--nav-bg) para no ser siempre negro puro y borderColor adaptable */}
       <div 
-        className="relative w-full rounded-3xl md:rounded-[2rem] overflow-hidden border shadow-2xl transition-all duration-500"
+        className="relative w-full rounded-3xl md:rounded-[2rem] overflow-hidden border shadow-2xl"
         style={{ 
           backgroundColor: 'var(--nav-bg)', 
           borderColor: 'var(--border-theme)',
-          backdropFilter: 'blur(10px)'
+          // ELIMINAMOS: backdropFilter y transition-all. 
+          // Esto hace que el navegador lo pinte de inmediato.
         }}
       >
-        
-        {/* Líneas de cuadrícula: Cambiamos a opacity adaptable para que se vea en ambos modos */}
-        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.07]" 
-             style={{ backgroundImage: `linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)`, backgroundSize: '30px 30px md:40px 40px' }}>
-        </div>
-
         <div className="relative flex flex-col md:flex-row items-center justify-between px-5 py-6 md:px-10 md:py-16">
           
           <div className="flex-1 text-center md:text-left">
@@ -31,7 +25,6 @@ export const PromoBanner = () => {
               Ofertas de Tiempo Limitado
             </div>
             
-            {/* CAMBIO 2: Color de texto dinámico con var(--foreground) */}
             <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-7xl font-black leading-[1] md:leading-[0.9] tracking-tighter"
                 style={{ color: 'var(--foreground)' }}>
               TECNOLOGÍA <br />
@@ -46,7 +39,6 @@ export const PromoBanner = () => {
           <div className="mt-6 md:mt-0 flex flex-col items-center md:items-end gap-3 md:gap-4 w-full md:w-auto">
             
             <div className="text-center md:text-right">
-              {/* CAMBIO 3: Color de texto dinámico */}
               <span className="text-3xl md:text-6xl font-light italic tracking-tighter" style={{ color: 'var(--foreground)' }}>40%</span>
               <span className="text-lg md:text-2xl font-bold text-blue-600 uppercase ml-1 md:ml-2 italic">Off</span>
             </div>
@@ -67,7 +59,7 @@ export const PromoBanner = () => {
 
         </div>
 
-        {/* Detalle de luz: En modo oscuro se ve azul, en claro es más sutil */}
+        {/* Detalle de luz: Mantenemos el efecto visual pero sin el blur general del fondo */}
         <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-blue-600/10 dark:bg-blue-600/20 blur-[100px] md:blur-[120px] pointer-events-none"></div>
       </div>
     </div>
