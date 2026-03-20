@@ -87,7 +87,9 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
   const showMasterLoader = isPageLoading || isImageLoading;
 
   if (!mounted) return null;
-  if (!product) return <LoaderProducts productName="Desconocido" />;
+  
+  // CORRECCIÓN 1: Se agrega la prop 'category' requerida por la interfaz
+  if (!product) return <LoaderProducts productName="DESCONOCIDO" category="CATÁLOGO" />;
 
   // --- 3. LÓGICA DE NEGOCIO ---
 
@@ -162,7 +164,11 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
       <AnimatePresence mode="wait">
         {showMasterLoader && (
           <motion.div key="product-loader-container" className="fixed inset-0 z-[100]">
-            <LoaderProducts productName={product.name.toUpperCase()} />
+            {/* CORRECCIÓN 2: Se agrega la prop 'category' requerida por la interfaz */}
+            <LoaderProducts 
+                productName={product.name.toUpperCase()} 
+                category={product.category?.toUpperCase() || "HARDWARE"} 
+            />
             <div className="hidden">
               <Image 
                 src={product.image} 
