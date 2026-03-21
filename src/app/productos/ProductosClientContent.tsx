@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useProductStore } from "@/store/useProductStore";
 import { Product } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,27 +15,48 @@ interface Props {
 }
 
 export default function ProductosClientContent({ initialProducts = [], activeCategory }: Props) {
-  const { filteredProducts, setProducts, searchQuery, setSearchQuery } = useProductStore();
+  // Traemos las acciones necesarias del nuevo Store
+  const { 
+    filteredProducts, 
+    setProducts, 
+    searchQuery, 
+    setSearchQuery, 
+    filterByCategory,
+    filterByOffers,
+    activeCategory: storeCategory 
+  } = useProductStore();
+  
   const searchParams = useSearchParams();
   const router = useRouter();
-
   const [mounted, setMounted] = useState(false);
 
+  // Parámetros de la URL
   const categoriaURL = searchParams.get('categoria');
   const esOferta = searchParams.get('oferta') === "true";
   const hayFiltroBusqueda = searchQuery !== "";
 
-  // 1. Sincronización Única y Silenciosa
+  // 1. Sincronización Inicial de datos (Server -> Zustand)
   useEffect(() => {
     setProducts(initialProducts);
     setMounted(true);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [initialProducts, setProducts]);
 
-  // 2. Lógica de Visualización: Usamos initialProducts si no hay búsqueda para estabilidad total
-  const displayList = useMemo(() => {
-    return hayFiltroBusqueda ? filteredProducts : initialProducts;
-  }, [hayFiltroBusqueda, filteredProducts, initialProducts]);
+  // 2. ESCUCHA DE URL: Este efecto sincroniza los filtros cuando cambia la URL
+  useEffect(() => {
+    if (mounted) {
+      if (esOferta) {
+        filterByOffers();
+      } else if (categoriaURL) {
+        filterByCategory(categoriaURL);
+      } else {
+        filterByCategory("Todas");
+      }
+    }
+  }, [categoriaURL, esOferta, mounted, filterByCategory, filterByOffers]);
+
+  // 3. LA FUENTE DE VERDAD: Ahora siempre usamos filteredProducts del store
+  const displayList = filteredProducts;
 
   const volverAlCatalogo = () => {
     setSearchQuery("");
@@ -44,14 +65,12 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
 
   if (!mounted) return null;
 
-  // Variantes para la animación de cascada (stagger)
+  // Animaciones (Tus variantes originales)
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.06,
-      },
+      transition: { staggerChildren: 0.06 },
     },
   };
 
@@ -62,8 +81,7 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
       y: 0,
       transition: {
         duration: 0.8,
-        // Usamos "as any" o definimos el array como una tupla fija
-        ease: [0.22, 1, 0.36, 1] as any, 
+        ease: [0.22, 1, 0.36, 1] as any,
       },
     },
   };
@@ -74,7 +92,7 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
       {/* Botón Volver */}
       <div className="h-10 mb-2">
         <AnimatePresence>
-          {(hayFiltroBusqueda || categoriaURL || esOferta) && (
+          {(hayFiltroBusqueda || (categoriaURL && categoriaURL !== "Todas") || esOferta) && (
             <motion.button
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -91,7 +109,7 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
         </AnimatePresence>
       </div>
 
-      {/* Cabecera */}
+      {/* Cabecera dinámica según el Store */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <motion.div
           initial={{ opacity: 0, x: -15 }}
@@ -99,7 +117,7 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-[var(--foreground)]">
-            {esOferta ? "Ofertas Especiales" : (categoriaURL || activeCategory || "Catálogo")}
+            {esOferta ? "Ofertas Especiales" : (storeCategory === "Todas" ? "Catálogo" : storeCategory)}
           </h1>
           <p className="text-sm font-bold opacity-40 mt-2 uppercase tracking-widest">
             {displayList.length} Productos encontrados
@@ -110,21 +128,18 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
         </div>
       </div>
 
-      {/* Grilla con Cascada Ultrasuave (Staggered Children) */}
+      {/* Grilla de Productos */}
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
+        key={storeCategory + searchQuery} // Forzamos reinicio de animación al filtrar
       >
         {displayList.map((product) => {
           const id = product._id || (product as any).id;
           return (
-            <motion.div
-              key={id}
-              variants={itemVariants}
-              className="h-full" // Asegura que el motion div ocupe todo el alto para el layout
-            >
+            <motion.div key={id} variants={itemVariants} className="h-full">
               <Link
                 href={`/productos/${id}`}
                 className="group relative flex flex-col h-full bg-[var(--card-bg)] border border-[var(--border-theme)] rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)]"
@@ -135,7 +150,6 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
                     alt={product.name}
                     className="w-full h-full object-contain transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110 group-hover:-translate-y-4 drop-shadow-xl"
                   />
-                  
                   {product.isOferta && (
                     <div className="absolute top-8 left-8">
                       <span className="backdrop-blur-md bg-blue-600/90 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg border border-white/10">
@@ -163,13 +177,11 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
                         {Number(product.price).toLocaleString('es-AR')}
                       </p>
                     </div>
-
                     <div className="w-12 h-12 rounded-full border border-[var(--border-theme)] flex items-center justify-center text-[var(--foreground)] transition-all duration-500 group-hover:bg-blue-600 group-hover:border-blue-600 group-hover:text-white group-hover:rotate-45">
                       <ArrowUpRight size={22} />
                     </div>
                   </div>
                 </div>
-
                 <div className="absolute -inset-24 bg-blue-500/10 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               </Link>
             </motion.div>
@@ -184,12 +196,12 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
           animate={{ opacity: 1 }}
           className="flex flex-col items-center justify-center py-40 border-2 border-dashed border-[var(--border-theme)] rounded-[3rem] bg-[var(--card-bg)]/30"
         >
-          <p className="font-black uppercase tracking-[0.3em] text-sm opacity-40 mb-6">No hay resultados para esta búsqueda</p>
+          <p className="font-black uppercase tracking-[0.3em] text-sm opacity-40 mb-6">No hay resultados</p>
           <button
             onClick={volverAlCatalogo}
             className="text-xs font-black uppercase bg-blue-600 text-white px-8 py-4 rounded-2xl hover:bg-blue-700 transition-all shadow-lg hover:scale-105 active:scale-95"
           >
-            Limpiar Filtros y Ver Todo
+            Limpiar Filtros
           </button>
         </motion.div>
       )}

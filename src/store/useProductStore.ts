@@ -2,11 +2,12 @@ import { create } from 'zustand';
 import { Product } from '@/types';
 
 interface ProductState {
-  products: Product[];           
-  filteredProducts: Product[];   
+  products: Product[];           // Base de datos completa (Backup)
+  filteredProducts: Product[];   // Lo que se muestra
   currentProduct: Product | null;
   isLoading: boolean;
   searchQuery: string;
+  activeCategory: string;        // Nueva: para recordar qué categoría hay
   
   // Acciones
   setProducts: (products: Product[]) => void;
@@ -15,18 +16,19 @@ interface ProductState {
   setSearchQuery: (query: string) => void;
   filterByCategory: (category: string) => void;
   filterByOffers: () => void;
+  applyFilters: () => void;      // La función "Cerebro"
   updateProductInList: (updatedProduct: Product) => void;
 }
 
-export const useProductStore = create<ProductState>((set) => ({
+export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
   filteredProducts: [],
   currentProduct: null,
   isLoading: false,
   searchQuery: "",
+  activeCategory: "Todas",
 
   setProducts: (products) => {
-    console.log("📦 ZUSTAND: Recibiendo productos ->", products?.length || 0, "items");
     const safeProducts = Array.isArray(products) ? products : [];
     const formattedProducts = safeProducts.map((p: any) => ({ 
       ...p, 
@@ -38,33 +40,48 @@ export const useProductStore = create<ProductState>((set) => ({
       filteredProducts: formattedProducts,
       isLoading: false 
     });
-    console.log("✅ ZUSTAND: Estado actualizado con", formattedProducts.length, "productos");
   },
 
-  setSearchQuery: (query) => set((state) => {
-    const lowerQuery = query.toLowerCase().trim();
-    const filtered = state.products.filter((p) => 
-      p.name.toLowerCase().includes(lowerQuery) || 
-      p.category.toLowerCase().includes(lowerQuery)
-    );
-    return { searchQuery: query, filteredProducts: filtered };
-  }),
+  // 1. Solo actualiza el texto y llama al cerebro
+  setSearchQuery: (query) => {
+    set({ searchQuery: query });
+    get().applyFilters();
+  },
 
-  filterByCategory: (category) => set((state) => {
-    console.log("🎯 ZUSTAND: Filtrando por categoría ->", category);
-    const filtered = category === "Todas" 
-      ? state.products 
-      : state.products.filter(p => p.category === category);
-    return { searchQuery: "", filteredProducts: filtered };
-  }),
+  // 2. Solo actualiza la categoría y llama al cerebro
+  filterByCategory: (category) => {
+    set({ activeCategory: category });
+    get().applyFilters();
+  },
 
-  filterByOffers: () => set((state) => {
-    console.log("🔥 ZUSTAND: Filtrando Ofertas");
-    return {
-      searchQuery: "",
-      filteredProducts: state.products.filter(p => p.isOferta === true)
-    };
-  }),
+  // 3. Filtro de ofertas (puedes tratarlo como una categoría especial)
+  filterByOffers: () => {
+    set({ activeCategory: "Ofertas", searchQuery: "" });
+    const offers = get().products.filter(p => p.isOferta);
+    set({ filteredProducts: offers });
+  },
+
+  // 4. EL CEREBRO: Combina categoría Y búsqueda
+  applyFilters: () => {
+    const { products, searchQuery, activeCategory } = get();
+    let result = [...products];
+
+    // Primero aplicamos Categoría
+    if (activeCategory !== "Todas" && activeCategory !== "Catálogo" && activeCategory !== "") {
+      result = result.filter(p => p.category === activeCategory);
+    }
+
+    // Luego, sobre ese resultado, aplicamos búsqueda por texto
+    if (searchQuery.trim() !== "") {
+      const lowerQuery = searchQuery.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(lowerQuery) || 
+        p.category.toLowerCase().includes(lowerQuery)
+      );
+    }
+
+    set({ filteredProducts: result });
+  },
 
   setCurrentProduct: (product) => set({ 
     currentProduct: product ? { ...product, id: product._id || product.id } : null 
