@@ -24,7 +24,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const cart = useCartStore((state) => state.cart);
   const { isLoggedIn, logout, user } = useAuthStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  // Acciones de Zustand
+  
   const filterByCategory = useProductStore((state) => state.filterByCategory);
   const filterByOffers = useProductStore((state) => state.filterByOffers);
 
@@ -54,14 +54,12 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
   const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
-  // Acción para categorías normales
   const handleCategoryAction = (categoryName: string) => {
     filterByCategory(categoryName);
     router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
     setIsMobileMenuOpen(false);
   };
 
-  // Acción específica para Ofertas (Desktop y Mobile)
   const handleOffersAction = () => {
     filterByOffers();
     router.push(`/productos?oferta=true`);
@@ -94,7 +92,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
       >
         <div className="max-w-7xl mx-auto px-4 w-full flex items-center justify-between gap-4">
 
-          {/* IZQUIERDA: LOGO */}
+          {/* IZQUIERDA: LOGO + SALUDO DINÁMICO */}
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2 group shrink-0">
               <div className="bg-blue-600 text-white p-2 rounded-xl shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
@@ -104,15 +102,61 @@ export const Navbar = ({ categories }: NavbarProps) => {
                 TECH<span className="text-blue-600">STORE</span>
               </span>
             </Link>
+
+            {/* RECUPERADO: Saludo de Bienvenida Desktop */}
+            {mounted && isLoggedIn && (
+              <div className="hidden lg:flex flex-col border-l pl-6 border-slate-500/20 leading-tight">
+                <span className="text-[8px] font-bold uppercase tracking-[0.2em] opacity-50" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>Bienvenido</span>
+                <span className="text-[12px] font-black uppercase text-blue-600">{user?.name?.split(' ')[0]}</span>
+              </div>
+            )}
           </div>
 
           {/* CENTRO: NAVEGACIÓN DESKTOP */}
           <div className="flex items-center">
             <ul className="hidden md:flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
               <li><Link href="/" className="hover:text-blue-600 transition-colors" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Inicio</Link></li>
-              <li><Link href="/productos" className="hover:text-blue-600 transition-colors" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Productos</Link></li>
               
-              {/* BOTÓN OFERTAS DESKTOP */}
+              {/* DROPDOWN CATEGORÍAS */}
+              <li 
+                className="relative group"
+                onMouseEnter={() => setIsDropdownOpen(true)}
+                onMouseLeave={() => setIsDropdownOpen(false)}
+              >
+                <button 
+                  className="flex items-center gap-1 hover:text-blue-600 transition-colors py-8" 
+                  style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
+                >
+                  Categorías <ChevronRight size={12} className={`transition-transform duration-300 ${isDropdownOpen ? 'rotate-90' : ''}`} />
+                </button>
+
+                <div className={`absolute top-[70px] left-0 w-56 rounded-2xl border shadow-2xl transition-all duration-300 origin-top-left z-[50] ${
+                  isDropdownOpen 
+                    ? 'opacity-100 scale-100 translate-y-0 visible' 
+                    : 'opacity-0 scale-95 -translate-y-2 invisible'
+                }`}
+                style={{ 
+                  backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', 
+                  borderColor: isDarkMode ? '#334155' : '#f1f5f9' 
+                }}>
+                  <div className="p-2 space-y-1">
+                    {categories.map((cat: any) => (
+                      <button
+                        key={cat._id}
+                        onClick={() => handleCategoryAction(cat.name)}
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-600/10 group/item transition-all text-left"
+                      >
+                        <span className="text-[11px] font-bold group-hover/item:text-blue-600" style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
+                          {cat.name}
+                        </span>
+                        <ChevronRight size={14} className="text-blue-600 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </li>
+
+              {/* BOTÓN OFERTAS */}
               <li>
                 <button 
                   onClick={handleOffersAction}
@@ -121,54 +165,18 @@ export const Navbar = ({ categories }: NavbarProps) => {
                   <Flame size={14} /> OFERTAS
                 </button>
               </li>
-              <li 
-    className="relative group"
-    onMouseEnter={() => setIsDropdownOpen(true)}
-    onMouseLeave={() => setIsDropdownOpen(false)}
-  >
-    <button 
-      className="flex items-center gap-1 hover:text-blue-600 transition-colors py-8" 
-      style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
-    >
-      Categorías <ChevronRight size={12} className={`transition-transform duration-300 ${isDropdownOpen ? 'rotate-90' : ''}`} />
-    </button>
 
-    {/* Menú Desplegable */}
-    <div className={`absolute top-[70px] left-0 w-56 rounded-2xl border shadow-2xl transition-all duration-300 origin-top-left ${
-      isDropdownOpen 
-        ? 'opacity-100 scale-100 translate-y-0 visible' 
-        : 'opacity-0 scale-95 -translate-y-2 invisible'
-    }`}
-    style={{ 
-      backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', 
-      borderColor: isDarkMode ? '#334155' : '#f1f5f9' 
-    }}>
-      <div className="p-2 space-y-1">
-        {categories.map((cat: any) => (
-          <button
-            key={cat._id}
-            onClick={() => handleCategoryAction(cat.name)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-600/10 group/item transition-all text-left"
-          >
-            <span className="text-[11px] font-bold group-hover/item:text-blue-600" style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-              {cat.name}
-            </span>
-            <ChevronRight size={14} className="text-blue-600 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all" />
-          </button>
-        ))}
-        
-        <div className="my-1 border-t opacity-10" />
-        
-        <Link 
-          href="/productos"
-          className="block px-4 py-3 text-[10px] text-center font-black text-blue-600 hover:opacity-70"
-        >
-          Ver todo el catálogo
-        </Link>
-      </div>
-    </div>
-  </li>
+              {/* PANEL ADMIN (Solo logueados) */}
+              {mounted && isLoggedIn && (
+                <li>
+                  <Link href="/admin" className="group relative flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-blue-500/25 active:scale-95 text-white font-black text-[9px]"
+                    style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}>
+                    <ShieldCheck size={14} /> PANEL ADMIN
+                  </Link>
+                </li>
+              )}
 
+              {/* INGRESAR (Solo no logueados) */}
               {mounted && !isLoggedIn && (
                 <li>
                   <Link href="/login" className="flex items-center gap-2 px-5 py-2 rounded-xl border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 font-black">
@@ -176,33 +184,44 @@ export const Navbar = ({ categories }: NavbarProps) => {
                   </Link>
                 </li>
               )}
-
-              {mounted && isLoggedIn && (
-                <li>
-                  <Link href="/admin" className="group relative flex items-center gap-2 px-5 py-2.5 rounded-xl overflow-hidden transition-all duration-300 shadow-lg hover:shadow-blue-500/25 active:scale-95 text-white font-black text-[9px]"
-                    style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}>
-                    <ShieldCheck size={14} /> PANEL ADMIN
-                  </Link>
-                </li>
-              )}
             </ul>
           </div>
 
-          {/* DERECHA: ICONOS */}
+          {/* DERECHA: ICONOS + LOGOUT */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Saludo Mobile Compacto */}
+            {mounted && isLoggedIn && (
+              <div className="md:hidden flex items-center justify-center px-3 py-1 rounded-lg border border-blue-600/20 bg-blue-600/5">
+                <span className="text-[9px] font-black uppercase text-blue-600">{user?.name?.split(' ')[0]}</span>
+              </div>
+            )}
+
             <button onClick={toggleTheme} className="p-2.5 rounded-xl border transition-all"
               style={{ borderColor: isDarkMode ? '#1e293b' : '#f1f5f9', color: isDarkMode ? '#94a3b8' : '#64748b' }}>
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
-            <Link href="/cart" className="relative p-2.5 rounded-xl transition-all" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
-              <ShoppingCart size={22} />
-              {mounted && itemCount > 0 && (
-                <span className="absolute top-1 right-1 bg-blue-600 text-white text-[9px] font-black min-w-[16px] h-4 flex items-center justify-center rounded-full px-1">
-                  {itemCount}
-                </span>
-              )}
-            </Link>
+            {/* Carrito con Validación de Sesión */}
+<button 
+  onClick={() => {
+    if (!isLoggedIn) {
+      router.push('/login');
+    } else {
+      router.push('/cart');
+    }
+  }}
+  className="relative p-2.5 rounded-xl transition-all hover:bg-blue-600/5" 
+  style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
+>
+  <ShoppingCart size={22} />
+  
+  {/* Solo mostramos el contador si está montado, logueado y tiene items */}
+  {mounted && isLoggedIn && itemCount > 0 && (
+    <span className="absolute top-1 right-1 bg-blue-600 text-white text-[9px] font-black min-w-[16px] h-4 flex items-center justify-center rounded-full px-1 animate-cart-pop">
+      {itemCount}
+    </span>
+  )}
+</button>
 
             {mounted && isLoggedIn && (
               <button onClick={handleLogout} className="hidden md:flex items-center gap-2 p-2.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20">
@@ -225,15 +244,17 @@ export const Navbar = ({ categories }: NavbarProps) => {
           style={{ backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, height: 'fit-content', maxHeight: sidebarMaxHeight }}>
           
           <div className="p-5 flex items-center justify-between border-b" style={{ borderColor: isDarkMode ? '#1e293b' : '#f1f5f9' }}>
-            <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>Menú Explorar</span>
+            <div className="flex flex-col">
+               <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>Menú Explorar</span>
+               {mounted && isLoggedIn && <span className="text-[10px] font-bold text-blue-600">Hola, {user?.name}</span>}
+            </div>
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-full hover:bg-red-500/10" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}><X size={20} /></button>
           </div>
 
           <div className="overflow-y-auto px-5 py-4 space-y-6">
-            {/* BOTÓN OFERTAS MOBILE (Destacado arriba) */}
             <button 
               onClick={handleOffersAction}
-              className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20"
+              className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg"
             >
               <div className="flex items-center gap-3">
                 <Flame size={18} />

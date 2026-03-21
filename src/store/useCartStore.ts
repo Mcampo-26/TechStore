@@ -14,6 +14,8 @@ export interface CartItem {
 interface CartState {
   cart: CartItem[];
   isDrawerOpen: boolean;
+  _hasHydrated: boolean; // Control de parpadeo
+  setHasHydrated: (state: boolean) => void;
   openDrawer: () => void;
   closeDrawer: () => void;
   setCart: (newCart: CartItem[]) => void;
@@ -30,7 +32,9 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       cart: [],
       isDrawerOpen: false,
+      _hasHydrated: false,
 
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
       openDrawer: () => set({ isDrawerOpen: true }),
       closeDrawer: () => set({ isDrawerOpen: false }),
       setCart: (newCart) => set({ cart: newCart }),
@@ -51,20 +55,16 @@ export const useCartStore = create<CartState>()(
 
       revalidateCartStock: (allProducts) => {
         if (!allProducts || allProducts.length === 0) return;
-        
         const currentCart = get().cart;
         const updatedCart = currentCart.map(item => {
           const fresh = allProducts.find(p => (p._id || p.id) === item.id);
-          
           if (fresh) {
             const freshStock = Number(fresh.stock);
             const priceBase = Number(fresh.price);
             const discountedPrice = fresh.isOferta 
               ? priceBase * (1 - (fresh.descuento || 0) / 100) 
               : priceBase;
-
             const adjustedQuantity = item.quantity > freshStock ? freshStock : item.quantity;
-            
             return { 
               ...item, 
               price: discountedPrice, 
@@ -74,7 +74,6 @@ export const useCartStore = create<CartState>()(
           }
           return item;
         });
-
         set({ cart: updatedCart });
       },
 
@@ -84,7 +83,6 @@ export const useCartStore = create<CartState>()(
         const existing = currentCart.find((item) => item.id === productId);
         const availableStock = Number(product.stock);
 
-        // SI YA NO HAY STOCK O SE ALCANZÓ EL LÍMITE
         if (availableStock <= 0 || (existing && existing.quantity >= availableStock)) {
           return { success: false, limit: availableStock };
         }
@@ -111,11 +109,7 @@ export const useCartStore = create<CartState>()(
           }];
         }
 
-        set({ 
-          cart: updatedCart, 
-          isDrawerOpen: showDrawer ? true : get().isDrawerOpen 
-        });
-
+        set({ cart: updatedCart, isDrawerOpen: showDrawer ? true : get().isDrawerOpen });
         if (userId) get().syncWithDB(userId, updatedCart);
         return { success: true };
       },
@@ -130,12 +124,10 @@ export const useCartStore = create<CartState>()(
         const currentCart = get().cart;
         const item = currentCart.find(i => i.id === productId);
         if (!item) return;
-
         const validatedQuantity = newQuantity > item.stock ? item.stock : Math.max(1, newQuantity);
         const updatedCart = currentCart.map((it) =>
           it.id === productId ? { ...it, quantity: validatedQuantity } : it
         );
-
         set({ cart: updatedCart });
         if (userId) get().syncWithDB(userId, updatedCart);
       },
@@ -143,6 +135,9 @@ export const useCartStore = create<CartState>()(
     {
       name: 'cart-storage',
       partialize: (state) => ({ cart: state.cart }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
