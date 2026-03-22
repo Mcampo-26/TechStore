@@ -10,7 +10,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { TechLoader } from '@/components/ui/TechLoader';
 import { AnimatePresence } from 'framer-motion';
 
@@ -32,7 +32,8 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-
+  const searchParams = useSearchParams();
+  const isOffersActive = pathname === '/productos' && searchParams.get('oferta') === 'true';
   const sidebarMaxHeight = '85vh'; 
 
   useEffect(() => {
@@ -61,11 +62,12 @@ export const Navbar = ({ categories }: NavbarProps) => {
   };
 
   const handleOffersAction = () => {
-    filterByOffers();
-    router.push(`/productos?oferta=true`);
+    if (!isOffersActive) {
+      filterByOffers();
+      router.push(`/productos?oferta=true`);
+    }
     setIsMobileMenuOpen(false);
   };
-
   const handleLogout = async () => {
     setIsLoggingOut(true);
     setIsMobileMenuOpen(false);
@@ -157,14 +159,51 @@ export const Navbar = ({ categories }: NavbarProps) => {
               </li>
 
               {/* BOTÓN OFERTAS */}
-              <li>
-                <button 
-                  onClick={handleOffersAction}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-all duration-300"
-                >
-                  <Flame size={14} /> OFERTAS
-                </button>
-              </li>
+              {/* BOTÓN OFERTAS DESKTOP */}
+<li>
+<button 
+  onClick={handleOffersAction}
+  className={`group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl transition-all duration-500 overflow-hidden ${
+    isOffersActive 
+    ? 'bg-orange-600 shadow-[0_0_25px_rgba(249,115,22,0.6)] border-orange-400' 
+    : 'bg-neutral-900 border-orange-500/40 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)] hover:shadow-[0_0_25px_rgba(249,115,22,0.4)]'
+  } border-2`}
+>
+  {/* EFECTO DE FONDO ANIMADO (Siempre se mueve) */}
+  {!isOffersActive && (
+    <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity">
+      <div className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,transparent_0%,#f97316_50%,transparent_100%)] animate-[spin_4s_linear_infinite]" />
+    </div>
+  )}
+
+  {/* Brillo interno de "respiración" */}
+  <div className={`absolute inset-0 bg-orange-500/10 ${!isOffersActive ? 'animate-pulse' : ''}`} />
+
+  <div className="relative flex items-center gap-2 z-10">
+    {/* Icono con llama animada */}
+    <div className="relative">
+      <Flame 
+        size={18} 
+        className={`transition-all duration-500 ${
+          isOffersActive ? 'text-white scale-110' : 'text-orange-500 animate-bounce'
+        }`}
+        fill="currentColor" 
+      />
+      {/* Resplandor detrás de la llama */}
+      <div className="absolute inset-0 bg-orange-500 blur-lg opacity-50 animate-pulse" />
+    </div>
+
+    <span className={`text-[12px] font-black uppercase tracking-[0.2em] italic transition-colors duration-500 ${
+      isOffersActive ? 'text-white' : 'text-orange-500 group-hover:text-white'
+    }`}>
+      Ofertas
+    </span>
+  </div>
+
+  {/* Rayo de luz que cruza automáticamente cada 3 segundos */}
+  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
+</button>
+</li>
 
               {/* PANEL ADMIN (Solo logueados) */}
               {mounted && isLoggedIn && (
@@ -201,27 +240,14 @@ export const Navbar = ({ categories }: NavbarProps) => {
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
-            {/* Carrito con Validación de Sesión */}
-<button 
-  onClick={() => {
-    if (!isLoggedIn) {
-      router.push('/login');
-    } else {
-      router.push('/cart');
-    }
-  }}
-  className="relative p-2.5 rounded-xl transition-all hover:bg-blue-600/5" 
-  style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
->
-  <ShoppingCart size={22} />
-  
-  {/* Solo mostramos el contador si está montado, logueado y tiene items */}
-  {mounted && isLoggedIn && itemCount > 0 && (
-    <span className="absolute top-1 right-1 bg-blue-600 text-white text-[9px] font-black min-w-[16px] h-4 flex items-center justify-center rounded-full px-1 animate-cart-pop">
-      {itemCount}
-    </span>
-  )}
-</button>
+            <Link href="/cart" className="relative p-2.5 rounded-xl transition-all hover:bg-blue-600/5" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
+              <ShoppingCart size={22} />
+              {mounted && itemCount > 0 && (
+                <span className="absolute top-1 right-1 bg-blue-600 text-white text-[9px] font-black min-w-[16px] h-4 flex items-center justify-center rounded-full px-1 animate-cart-pop">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
 
             {mounted && isLoggedIn && (
               <button onClick={handleLogout} className="hidden md:flex items-center gap-2 p-2.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20">
