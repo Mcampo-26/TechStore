@@ -191,20 +191,54 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
 
       {/* Estado vacío */}
       {displayList.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center py-40 border-2 border-dashed border-[var(--border-theme)] rounded-[3rem] bg-[var(--card-bg)]/30"
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+    className="relative overflow-hidden flex flex-col items-center justify-center py-28 px-8 border border-[var(--border-theme)] rounded-[3rem] bg-[var(--card-bg)] shadow-2xl"
+  >
+    {/* Efecto de luz ambiental en el fondo */}
+    <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
+    <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none" />
+
+    <div className="relative z-10 flex flex-col items-center text-center">
+      {/* Icono de búsqueda minimalista */}
+      <div className="mb-8 p-5 bg-[var(--border-theme)]/10 rounded-full">
+        <svg 
+          className="w-10 h-10 text-blue-500 opacity-80" 
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
         >
-          <p className="font-black uppercase tracking-[0.3em] text-sm opacity-40 mb-6">No hay resultados</p>
-          <button
-            onClick={volverAlCatalogo}
-            className="text-xs font-black uppercase bg-blue-600 text-white px-8 py-4 rounded-2xl hover:bg-blue-700 transition-all shadow-lg hover:scale-105 active:scale-95"
-          >
-            Limpiar Filtros
-          </button>
-        </motion.div>
-      )}
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        </svg>
+      </div>
+
+      <h3 className="text-2xl font-black text-[var(--text-main)] mb-3 tracking-tight uppercase italic">
+        Sin coincidencias
+      </h3>
+      
+      <p className="text-sm text-[var(--text-muted)] opacity-60 max-w-[260px] mb-10 leading-relaxed">
+        No hay resultados para tu búsqueda actual. Prueba con otros criterios.
+      </p>
+
+      {/* El Botón que pediste con un diseño más Pro */}
+      <button
+        onClick={volverAlCatalogo}
+        className="group relative flex items-center gap-3 px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.15em] transition-all duration-500 shadow-[0_15px_30px_-10px_rgba(37,99,235,0.4)] hover:shadow-[0_20px_40px_-10px_rgba(37,99,235,0.6)] hover:-translate-y-1 active:scale-95"
+      >
+        <span className="relative z-10">Limpiar Filtros</span>
+        <svg 
+          className="w-4 h-4 relative z-10 transition-transform duration-500 group-hover:rotate-90" 
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        
+        {/* Destello interno al hacer hover */}
+        <div className="absolute inset-0 w-0 group-hover:w-full transition-all duration-500 ease-out bg-white/10 rounded-2xl" />
+      </button>
+    </div>
+  </motion.div>
+)}
     </div>
   );
 }
