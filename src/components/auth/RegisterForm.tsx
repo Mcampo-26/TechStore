@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useState } from 'react';
 import { Loader2, Mail, Lock, User, ArrowRight, ShieldPlus, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
+
 
 export const RegisterForm = () => {
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export const RegisterForm = () => {
 
   return (
     <>
-      {loading && <LoadingOverlay message="Creando tu cuenta..." />}
+     
       
       <div className="rounded-[2.5rem] p-10 border shadow-sm transition-all"
            style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>
