@@ -6,7 +6,7 @@
   import { getCategoriesServer } from "@/lib/products-server";
   import { Metadata, Viewport } from "next"; // Importamos tipos para SEO
   import { Suspense } from "react";
-  
+  import RouteChangeListener from "@/components/layout/RouteChangeListener";
   const geistSans = Geist({ 
     variable: "--font-geist-sans", 
     subsets: ["latin"],
@@ -55,6 +55,7 @@
           </a>
 
           <Suspense fallback={<div className="h-20 w-full bg-slate-900" />}>
+          <RouteChangeListener />
           <Navbar categories={categories} />
         </Suspense>
           <CartDrawer />

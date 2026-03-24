@@ -13,7 +13,7 @@ export default function Loading() {
         {/* 2. Texto y Barra de Progreso Minimalista */}
         <div className="flex flex-col items-center gap-4">
           <p className="text-[10px] font-black tracking-[0.5em] text-blue-600 uppercase italic animate-pulse">
-            Preparando Experiencia
+            Cargando ...
           </p>
           
           {/* Línea de carga técnica */}
