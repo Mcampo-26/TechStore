@@ -74,12 +74,14 @@ export const TechLoader = ({ mode, userName, isStepTwo }: TechLoaderProps) => {
           )}
         </h3>
         
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] mt-4 opacity-50 max-w-[280px] leading-relaxed mx-auto"
-           style={{ color: 'var(--foreground)' }}>
-          {isLogin 
-            ? (isStepTwo ? 'Verificando credenciales encriptadas' : 'Sincronizando entorno de trabajo...') 
-            : 'Finalizando conexión segura '}
-        </p>
+        <p 
+  className="text-[10px] font-black uppercase tracking-[0.4em] mt-4 opacity-50 max-w-[280px] leading-relaxed mx-auto italic animate-pulse"
+  style={{ color: 'var(--foreground)' }}
+>
+  {isLogin 
+    ? 'Verificando credenciales encriptadas' 
+    : 'Finalizando conexión segura'}
+</p>
       </motion.div>
 
       <motion.div 

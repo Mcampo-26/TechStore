@@ -8,7 +8,7 @@ import {
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
-import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
+
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { TechLoader } from '@/components/ui/TechLoader';
@@ -95,7 +95,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
   return (
     <>
-      {isLoggingOut && <LoadingOverlay message="Cerrando sesión..." />}
+     
       <AnimatePresence>
         {isLoggingOut && <TechLoader mode="logout" />}
       </AnimatePresence>
