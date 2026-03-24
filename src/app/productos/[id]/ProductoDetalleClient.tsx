@@ -26,11 +26,12 @@ interface ProductoDetalleClientProps {
 export default function ProductoDetalleClient({ product }: ProductoDetalleClientProps) {
   const router = useRouter();
   
-  const [mounted, setMounted] = useState(false);
+  // 1. Ya no bloqueamos con 'mounted'. El HTML se renderiza de inmediato.
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   
+  // 2. Estado inicial de imagen directo desde el prop para evitar flashes.
   const [mainImage, setMainImage] = useState<string>(product?.image || '');
   const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({ display: 'none' });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,8 +49,8 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
   }, [product]);
 
   useEffect(() => {
-    setMounted(true);
     if (product) {
+      // 3. Los efectos de cliente corren en paralelo al renderizado.
       window.scrollTo({ top: 0, behavior: 'instant' });
       setCurrentProduct(product);
       setMainImage(product.image);
@@ -63,18 +64,27 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
     }, 150);
   };
 
-  if (!mounted) return null;
-  if (!product) return <div className="pt-40 text-center font-black uppercase opacity-20 text-[var(--foreground)]">Producto no encontrado</div>;
+  // 4. Único control de seguridad. Sin 'mounted' para permitir SSR.
+  if (!product) {
+    return (
+      <div className="pt-40 text-center font-black uppercase opacity-20 text-[var(--foreground)]">
+        Producto no encontrado
+      </div>
+    );
+  }
 
   const esOferta = String(product.isOferta) === "true";
   const descuentoNum = Number(product.descuento || 0);
   const precioOriginal = Number(product.price) || 0;
-  const precioFinal = (esOferta && descuentoNum > 0) ? precioOriginal * (1 - (descuentoNum / 100)) : precioOriginal;
+  const precioFinal = (esOferta && descuentoNum > 0) 
+    ? precioOriginal * (1 - (descuentoNum / 100)) 
+    : precioOriginal;
   const hasStock = product.stock > 0;
 
   const handleAddToCart = async () => {
     const userId = user?.id || (user as any)?._id;
     const result = await addToCart({ ...product, price: precioFinal }, userId);
+    
     if (result && !result.success) {
       const isDark = document.documentElement.classList.contains('dark');
       Swal.fire({
@@ -153,10 +163,10 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
               fill 
               priority 
               fetchPriority="high"
-              quality={100}
+              quality={90}
               onLoad={() => setIsImageLoading(false)}
               className={`object-contain p-8 sm:p-12 transition-all duration-500 ${
-                isImageLoading ? 'opacity-0 scale-95 blur-lg' : 
+                isImageLoading ? 'opacity-0 scale-95' : 
                 (isHovering && isUnlockedForever ? 'opacity-0 scale-110' : 'opacity-100 scale-100')
               }`}
             />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react"; // 1. Agregamos Suspense aquí
+import React, { useEffect, useState, Suspense, useMemo } from "react";
 import { useProductStore } from "@/store/useProductStore";
 import { Product } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,13 +8,13 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SearchInput } from "@/components/layout/SearchInput";
 import { ChevronLeft, ArrowUpRight } from "lucide-react";
+import { Variants } from "framer-motion";
 
 interface Props {
   initialProducts: Product[];
   activeCategory: string;
 }
 
-// 2. Renombramos la función interna
 function ProductosContent({ initialProducts = [] }: Props) {
   const { 
     filteredProducts, 
@@ -28,20 +28,25 @@ function ProductosContent({ initialProducts = [] }: Props) {
   
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  
+  // 1. Eliminamos el bloqueo de 'mounted' para el renderizado inicial.
+  // Solo lo usamos para disparar los filtros de la URL una vez que el cliente está listo.
+  const [hasMounted, setHasMounted] = useState(false);
 
   const categoriaURL = searchParams.get('categoria');
   const esOferta = searchParams.get('oferta') === "true";
   const hayFiltroBusqueda = searchQuery !== "";
 
+  // 2. Sincronización inmediata de productos
   useEffect(() => {
     setProducts(initialProducts);
-    setMounted(true);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    setHasMounted(true);
+    // No usamos 'instant' aquí para no romper la experiencia si el usuario vuelve atrás
   }, [initialProducts, setProducts]);
 
+  // 3. Aplicación de filtros desde la URL
   useEffect(() => {
-    if (mounted) {
+    if (hasMounted) {
       if (esOferta) {
         filterByOffers();
       } else if (categoriaURL) {
@@ -50,33 +55,36 @@ function ProductosContent({ initialProducts = [] }: Props) {
         filterByCategory("Todas");
       }
     }
-  }, [categoriaURL, esOferta, mounted, filterByCategory, filterByOffers]);
+  }, [categoriaURL, esOferta, hasMounted, filterByCategory, filterByOffers]);
 
-  const displayList = filteredProducts;
+  // Si no ha montado, mostramos los productos iniciales (SSR), 
+  // si ya montó, mostramos los filtrados del store.
+  const displayList = hasMounted ? filteredProducts : initialProducts;
 
   const volverAlCatalogo = () => {
     setSearchQuery("");
     router.push('/productos');
   };
 
-  if (!mounted) return null;
-
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.06 },
+      transition: { 
+        staggerChildren: 0.05 
+      },
     },
   };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
+  
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.8,
-        ease: [0.22, 1, 0.36, 1] as any,
+        duration: 0.5,
+        // Usamos "as any" o el tipado correcto para que TS no se queje de la curva Bézier
+        ease: [0.22, 1, 0.36, 1] as any, 
       },
     },
   };
@@ -127,7 +135,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
         variants={containerVariants}
         key={storeCategory + searchQuery}
       >
-        {displayList.map((product) => {
+        {displayList.map((product, index) => {
           const id = product._id || (product as any).id;
           return (
             <motion.div key={id} variants={itemVariants} className="h-full">
@@ -139,6 +147,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
                   <img
                     src={product.image}
                     alt={product.name}
+                    loading={index < 4 ? "eager" : "lazy"} // Las primeras 4 cargan de inmediato
                     className="w-full h-full object-contain transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110 group-hover:-translate-y-4 drop-shadow-xl"
                   />
                   {product.isOferta && (
@@ -153,7 +162,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
                 <div className="p-8 flex flex-col flex-grow">
                   <div className="space-y-1 mb-6">
                     <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] text-[var(--foreground)]">
-                      {product.category || "Edición Limitada"}
+                      {product.category || "Hardware"}
                     </p>
                     <h3 className="text-xl font-bold tracking-tight text-[var(--foreground)] leading-[1.2] transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                       {product.name}
@@ -184,30 +193,18 @@ function ProductosContent({ initialProducts = [] }: Props) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-          className="relative overflow-hidden flex flex-col items-center justify-center py-28 px-8 border-2 border-dashed border-[var(--border-theme)] rounded-[3rem] bg-[var(--card-bg)]/30 shadow-xl"
+          className="relative overflow-hidden flex flex-col items-center justify-center py-28 px-8 border-2 border-dashed border-[var(--border-theme)] rounded-[3rem] bg-[var(--card-bg)]/30"
         >
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-blue-600/5 blur-[100px] rounded-full pointer-events-none" />
-
           <div className="relative z-10 flex flex-col items-center text-center">
-            <div className="mb-6 p-5 bg-blue-600/10 rounded-full">
-              <svg className="w-10 h-10 text-blue-600 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-black text-[var(--foreground)] mb-2 tracking-tight uppercase italic">Sin coincidencias</h3>
-            <p className="text-sm font-bold text-[var(--foreground)] opacity-40 max-w-[260px] mb-10 leading-relaxed uppercase tracking-widest">
-              No hay productos para tu búsqueda actual
+            <h3 className="text-2xl font-black text-[var(--foreground)] mb-2 uppercase italic">Sin coincidencias</h3>
+            <p className="text-sm font-bold text-[var(--foreground)] opacity-40 mb-10 uppercase tracking-widest">
+              No hay productos para tu búsqueda
             </p>
             <button
               onClick={volverAlCatalogo}
-              className="group relative flex items-center gap-3 px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] transition-all duration-300 shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 overflow-hidden"
+              className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] hover:bg-blue-700 transition-all"
             >
-              <span className="relative z-10">Limpiar Filtros</span>
-              <svg className="w-4 h-4 relative z-10 transition-transform duration-500 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              Limpiar Filtros
             </button>
           </div>
         </motion.div>
@@ -216,10 +213,16 @@ function ProductosContent({ initialProducts = [] }: Props) {
   );
 }
 
-// 3. EXPORTACIÓN FINAL CON SUSPENSE (Esto es lo que arregla el error de Vercel)
 export default function ProductosClientContent(props: Props) {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-black opacity-20 uppercase tracking-[0.4em]">Cargando...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[10px] font-black tracking-[0.4em] opacity-20 uppercase">Iniciando Catálogo...</p>
+        </div>
+      </div>
+    }>
       <ProductosContent {...props} />
     </Suspense>
   );

@@ -30,10 +30,18 @@ export const getProductsServer = unstable_cache(
 export async function getProductById(id: string) {
   try {
     await connectDB();
-    const product = await Product.findById(id).lean(); 
+    // .select() ayuda a traer solo lo que vas a mostrar, ignorando campos basura
+    const product = await Product.findById(id)
+      .select('name price description image image2 image3 category stock isOferta descuento')
+      .lean(); 
+      
     if (!product) return null;
     
-    return JSON.parse(JSON.stringify(product));
+    // Serialización manual rápida (evita el JSON.parse(JSON.stringify))
+    return {
+      ...product,
+      _id: product._id.toString(),
+    };
   } catch (error) {
     console.error("Error obteniendo producto por ID:", error);
     return null;
