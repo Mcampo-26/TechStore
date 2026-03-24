@@ -24,7 +24,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const cart = useCartStore((state) => state.cart);
   const { isLoggedIn, logout, user } = useAuthStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   const filterByCategory = useProductStore((state) => state.filterByCategory);
   const filterByOffers = useProductStore((state) => state.filterByOffers);
 
@@ -34,7 +34,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const searchParams = useSearchParams();
   const isOffersActive = pathname === '/productos' && searchParams.get('oferta') === 'true';
-  const sidebarMaxHeight = '85vh'; 
+  const sidebarMaxHeight = '85vh';
 
   useEffect(() => {
     setMounted(true);
@@ -75,7 +75,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
       logout();
       router.push('/');
       setTimeout(() => setIsLoggingOut(false), 500);
-    }, 1500); 
+    }, 1500);
   };
 
   return (
@@ -85,11 +85,11 @@ export const Navbar = ({ categories }: NavbarProps) => {
         {isLoggingOut && <TechLoader mode="logout" />}
       </AnimatePresence>
 
-      <nav 
-        className="relative w-full z-40 border-b h-20 flex items-center shadow-sm transition-colors duration-300" 
-        style={{ 
-          backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', 
-          borderColor: isDarkMode ? '#1e293b' : '#f1f5f9' 
+      <nav
+        className="relative w-full z-40 border-b h-20 flex items-center shadow-sm transition-colors duration-300"
+        style={{
+          backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
+          borderColor: isDarkMode ? '#1e293b' : '#f1f5f9'
         }}
       >
         <div className="max-w-7xl mx-auto px-4 w-full flex items-center justify-between gap-4">
@@ -118,29 +118,28 @@ export const Navbar = ({ categories }: NavbarProps) => {
           <div className="flex items-center">
             <ul className="hidden md:flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
               <li><Link href="/" className="hover:text-blue-600 transition-colors" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Inicio</Link></li>
-              
+
               {/* DROPDOWN CATEGORÍAS */}
-              <li 
+              <li
                 className="relative group"
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
               >
-                <button 
-                  className="flex items-center gap-1 hover:text-blue-600 transition-colors py-8" 
+                <button
+                  className="flex items-center gap-1 hover:text-blue-600 transition-colors py-8"
                   style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
                 >
                   Categorías <ChevronRight size={12} className={`transition-transform duration-300 ${isDropdownOpen ? 'rotate-90' : ''}`} />
                 </button>
 
-                <div className={`absolute top-[70px] left-0 w-56 rounded-2xl border shadow-2xl transition-all duration-300 origin-top-left z-[50] ${
-                  isDropdownOpen 
-                    ? 'opacity-100 scale-100 translate-y-0 visible' 
+                <div className={`absolute top-[70px] left-0 w-56 rounded-2xl border shadow-2xl transition-all duration-300 origin-top-left z-[50] ${isDropdownOpen
+                    ? 'opacity-100 scale-100 translate-y-0 visible'
                     : 'opacity-0 scale-95 -translate-y-2 invisible'
-                }`}
-                style={{ 
-                  backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', 
-                  borderColor: isDarkMode ? '#334155' : '#f1f5f9' 
-                }}>
+                  }`}
+                  style={{
+                    backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+                    borderColor: isDarkMode ? '#334155' : '#f1f5f9'
+                  }}>
                   <div className="p-2 space-y-1">
                     {categories.map((cat: any) => (
                       <button
@@ -160,49 +159,53 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
               {/* BOTÓN OFERTAS */}
               {/* BOTÓN OFERTAS DESKTOP */}
-<li>
-<button 
-  onClick={handleOffersAction}
-  className={`group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl transition-all duration-500 overflow-hidden ${
-    isOffersActive 
-    ? 'bg-orange-600 shadow-[0_0_25px_rgba(249,115,22,0.6)] border-orange-400' 
-    : 'bg-neutral-900 border-orange-500/40 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)] hover:shadow-[0_0_25px_rgba(249,115,22,0.4)]'
-  } border-2`}
->
-  {/* EFECTO DE FONDO ANIMADO (Siempre se mueve) */}
-  {!isOffersActive && (
-    <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity">
-      <div className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,transparent_0%,#f97316_50%,transparent_100%)] animate-[spin_4s_linear_infinite]" />
+              <li>
+  <button
+    onClick={handleOffersAction}
+    className={`group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl transition-all duration-500 overflow-hidden border-2 ${
+      isOffersActive
+        ? 'bg-orange-600 shadow-[0_0_25px_rgba(249,115,22,0.6)] border-orange-400'
+        : isDarkMode 
+          ? 'bg-slate-900 border-orange-500/40 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)]' 
+          : 'bg-orange-50 border-orange-200 hover:border-orange-500 shadow-sm'
+    }`}
+  >
+    {/* EFECTO DE FONDO ANIMADO - Solo visible si no está activo */}
+    {!isOffersActive && (
+      <div className="absolute inset-0 opacity-10 group-hover:opacity-30 transition-opacity">
+        <div className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,transparent_0%,#f97316_50%,transparent_100%)] animate-[spin_4s_linear_infinite]" />
+      </div>
+    )}
+
+    {/* Brillo interno de "respiración" */}
+    <div className={`absolute inset-0 bg-orange-500/5 ${!isOffersActive ? 'animate-pulse' : ''}`} />
+
+    <div className="relative flex items-center gap-2 z-10">
+      {/* Icono con llama animada */}
+      <div className="relative">
+        <Flame
+          size={18}
+          className={`transition-all duration-500 ${
+            isOffersActive ? 'text-white scale-110' : 'text-orange-500 animate-bounce'
+          }`}
+          fill="currentColor"
+        />
+        {/* Resplandor detrás de la llama */}
+        <div className="absolute inset-0 bg-orange-500 blur-lg opacity-30 animate-pulse" />
+      </div>
+
+      <span className={`text-[12px] font-black uppercase tracking-[0.2em] italic transition-colors duration-500 ${
+        isOffersActive 
+          ? 'text-white' 
+          : isDarkMode ? 'text-orange-500 group-hover:text-white' : 'text-orange-600'
+      }`}>
+        Ofertas
+      </span>
     </div>
-  )}
 
-  {/* Brillo interno de "respiración" */}
-  <div className={`absolute inset-0 bg-orange-500/10 ${!isOffersActive ? 'animate-pulse' : ''}`} />
-
-  <div className="relative flex items-center gap-2 z-10">
-    {/* Icono con llama animada */}
-    <div className="relative">
-      <Flame 
-        size={18} 
-        className={`transition-all duration-500 ${
-          isOffersActive ? 'text-white scale-110' : 'text-orange-500 animate-bounce'
-        }`}
-        fill="currentColor" 
-      />
-      {/* Resplandor detrás de la llama */}
-      <div className="absolute inset-0 bg-orange-500 blur-lg opacity-50 animate-pulse" />
-    </div>
-
-    <span className={`text-[12px] font-black uppercase tracking-[0.2em] italic transition-colors duration-500 ${
-      isOffersActive ? 'text-white' : 'text-orange-500 group-hover:text-white'
-    }`}>
-      Ofertas
-    </span>
-  </div>
-
-  {/* Rayo de luz que cruza automáticamente cada 3 segundos */}
-  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
-</button>
+    {/* Rayo de luz (Shimmer) */}
+    <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
+  </button>
 </li>
 
               {/* PANEL ADMIN (Solo logueados) */}
@@ -268,17 +271,17 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
         <div className={`relative w-[320px] transition-all duration-500 flex flex-col rounded-[2rem] overflow-hidden ${isMobileMenuOpen ? 'translate-x-0 scale-100' : 'translate-x-10 scale-95 opacity-0'}`}
           style={{ backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, height: 'fit-content', maxHeight: sidebarMaxHeight }}>
-          
+
           <div className="p-5 flex items-center justify-between border-b" style={{ borderColor: isDarkMode ? '#1e293b' : '#f1f5f9' }}>
             <div className="flex flex-col">
-               <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>Menú Explorar</span>
-               {mounted && isLoggedIn && <span className="text-[10px] font-bold text-blue-600">Hola, {user?.name}</span>}
+              <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>Menú Explorar</span>
+              {mounted && isLoggedIn && <span className="text-[10px] font-bold text-blue-600">Hola, {user?.name}</span>}
             </div>
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-full hover:bg-red-500/10" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}><X size={20} /></button>
           </div>
 
           <div className="overflow-y-auto px-5 py-4 space-y-6">
-            <button 
+            <button
               onClick={handleOffersAction}
               className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg"
             >

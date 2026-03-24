@@ -1,79 +1,69 @@
+"use client";
 
-  "use client";
-  
-  import React, { useEffect, useState } from "react";
-  import { X, Save, PlusCircle, Edit3, Zap, Image as ImageIcon, Check } from "lucide-react";
-  import { useCategoryStore } from "@/store/useCategoryStore";
-  import Swal from "sweetalert2";
-  
-  interface EditProductModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    product: any;
-    setProduct: (product: any) => void;
-    onUpdate: (e: any) => void; // Cambiado a any para manejar el evento manual
-    isCreating?: boolean;
-  }
-  
-  export const EditProductModal = ({
-    isOpen,
-    onClose,
-    product,
-    setProduct,
-    onUpdate,
-    isCreating = false
-  }: EditProductModalProps) => {
-    const { categories, addCategory } = useCategoryStore();
-    const [isAddingNew, setIsAddingNew] = useState(false);
-    const [newCatName, setNewCatName] = useState("");
-  
-    useEffect(() => {
-      if (isOpen) {
-        setIsAddingNew(false);
-        setNewCatName("");
-      }
-    }, [isOpen]);
-  
-    if (!isOpen || !product) return null;
-  
-    // --- NUEVA FUNCIÓN DE VALIDACIÓN ---
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-  
-      // 1. Validaciones básicas obligatorias
-      if (!product.name?.trim() || !product.category || !product.price || product.stock === undefined) {
+import React, { useEffect, useState } from "react";
+import { X, Save, PlusCircle, Edit3, Zap, Image as ImageIcon, Check } from "lucide-react";
+import { useCategoryStore } from "@/store/useCategoryStore";
+import Swal from "sweetalert2";
+
+interface EditProductModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  product: any;
+  setProduct: (product: any) => void;
+  onUpdate: (e: any) => void;
+  isCreating?: boolean;
+}
+
+export const EditProductModal = ({
+  isOpen,
+  onClose,
+  product,
+  setProduct,
+  onUpdate,
+  isCreating = false
+}: EditProductModalProps) => {
+  const { categories, addCategory } = useCategoryStore();
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsAddingNew(false);
+      setNewCatName("");
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !product) return null;
+
+  // --- VALIDACIÓN ANTES DE GUARDAR ---
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!product.name?.trim() || !product.category || !product.price || product.stock === undefined) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Campos incompletos',
+        text: 'Por favor, completa nombre, categoría, precio y stock.',
+        confirmButtonColor: '#2563eb'
+      });
+      return;
+    }
+
+    if (product.isOferta) {
+      const desc = Number(product.descuento);
+      if (!desc || desc <= 0 || desc > 100) {
         Swal.fire({
-          icon: 'error',
-          title: 'Campos incompletos',
-          text: 'Por favor, completa nombre, categoría, precio y stock.',
+          icon: 'warning',
+          title: 'Falta el descuento',
+          text: 'Si el producto está en oferta, debes ingresar un porcentaje de descuento válido (1-100).',
           confirmButtonColor: '#2563eb'
         });
         return;
       }
-  
-      // 2. VALIDACIÓN DE OFERTA (Lo que pediste)
-      if (product.isOferta) {
-        const desc = Number(product.descuento);
-        if (!desc || desc <= 0 || desc > 100) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'Falta el descuento',
-            text: 'Si el producto está en oferta, debes ingresar un porcentaje de descuento válido (1-100).',
-            confirmButtonColor: '#2563eb'
-          });
-          return;
-        }
-      }
-  
-      // Si todo está bien, llamamos a la función original que guarda en la DB
-      onUpdate(e);
-    };
+    }
 
-
-
-
-
-
+    onUpdate(e);
+  };
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -86,18 +76,13 @@
 
   const handleAddNewCategory = async () => {
     if (!newCatName.trim()) return;
-
     Swal.fire({ title: 'Guardando categoría...', didOpen: () => Swal.showLoading() });
-
     const savedCat = await addCategory(newCatName.trim());
-
     if (savedCat) {
       setProduct({ ...product, category: savedCat.name });
       setIsAddingNew(false);
       setNewCatName("");
       Swal.fire({ icon: 'success', title: 'Categoría creada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-    } else {
-      Swal.fire("Error", "No se pudo crear la categoría en la base de datos", "error");
     }
   };
 
@@ -128,7 +113,7 @@
         {/* CUERPO */}
         <form className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           
-          {/* OFERTA */}
+          {/* SECCIÓN OFERTA */}
           <div className={`p-6 rounded-[2rem] border-2 transition-all ${product.isOferta ? 'bg-blue-600 border-blue-400 shadow-xl shadow-blue-600/20' : 'bg-[var(--card-bg)] border-[var(--border-theme)]'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -159,7 +144,6 @@
               <input type="text" className={inputClass} value={product.name || ""} onChange={(e) => setProduct({ ...product, name: e.target.value })} />
             </div>
 
-            {/* SELECTOR CATEGORIAS */}
             <div className="flex flex-col">
               <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Categoría</label>
               {!isAddingNew ? (
@@ -180,21 +164,36 @@
               )}
             </div>
 
-            <div>
-              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Precio (ARS)</label>
-              <input type="number" className={inputClass} value={product.price || ""} onChange={(e) => setProduct({ ...product, price: Number(e.target.value) })} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Precio (ARS)</label>
+                <input type="number" className={inputClass} value={product.price || ""} onChange={(e) => setProduct({ ...product, price: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Stock</label>
+                <input type="number" className={inputClass} value={product.stock ?? ""} onChange={(e) => setProduct({ ...product, stock: Number(e.target.value) })} />
+              </div>
             </div>
 
-            <div>
-              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Stock</label>
-              <input type="number" className={inputClass} value={product.stock ?? ""} onChange={(e) => setProduct({ ...product, stock: Number(e.target.value) })} />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Imagen Principal (URL)</label>
-              <div className="relative">
-                <ImageIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20" />
-                <input type="text" className={`${inputClass} pl-12`} value={product.image || ""} onChange={(e) => setProduct({ ...product, image: e.target.value })} />
+            {/* SECCIÓN DE IMÁGENES (Recuperadas) */}
+            <div className="md:col-span-2 space-y-4">
+              <div>
+                <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Imagen Principal (URL)</label>
+                <div className="relative">
+                  <ImageIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20" />
+                  <input type="text" className={`${inputClass} pl-12`} value={product.image || ""} onChange={(e) => setProduct({ ...product, image: e.target.value })} />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Imagen 2 (Opcional)</label>
+                  <input type="text" className={inputClass} value={product.image2 || ""} onChange={(e) => setProduct({ ...product, image2: e.target.value })} placeholder="URL imagen secundaria..." />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Imagen 3 (Opcional)</label>
+                  <input type="text" className={inputClass} value={product.image3 || ""} onChange={(e) => setProduct({ ...product, image3: e.target.value })} placeholder="URL imagen terciaria..." />
+                </div>
               </div>
             </div>
 
@@ -211,13 +210,13 @@
             Descartar
           </button>
           <button 
-  type="button" 
-  onClick={handleSubmit} // <--- Solo llamamos a handleSubmit
-  className="flex-[2] py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"
->
-  <Save size={18} />
-  {isCreating ? "Confirmar y Publicar" : "Guardar Cambios"}
-</button>
+            type="button" 
+            onClick={handleSubmit}
+            className="flex-[2] py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"
+          >
+            <Save size={18} />
+            {isCreating ? "Confirmar y Publicar" : "Guardar Cambios"}
+          </button>
         </div>
       </div>
     </div>
