@@ -56,32 +56,37 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
   const handleCategoryAction = (categoryName: string) => {
-    // 1. Vaciamos la lista visual de inmediato
-    useProductStore.getState().clearFilters();
-    
+    // 1. Cerramos los menús visualmente primero
     setIsMobileMenuOpen(false);
     setIsDropdownOpen(false);
 
-    // 2. Navegamos (esto activa el Spinner global)
+    // 2. DISPARAMOS LA NAVEGACIÓN PRIMERO.
+    // Al hacer router.push, el 'RouteChangeListener' detecta el cambio
+    // y monta el Spinner azul sobre los productos actuales (viejos).
     router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
 
-    // 3. Ejecutamos el filtro después de un breve delay (200ms)
-    // Así, cuando el Spinner se quite, los productos ya habrán cambiado "por detrás"
+    // 3. ESPERAMOS A QUE EL SPINNER ESTÉ PUESTO.
+    // Con 150ms-200ms aseguramos que el Spinner ya tapó la pantalla.
+    // Recién ahí limpiamos y filtramos en el "background" (detrás del spinner).
     setTimeout(() => {
+      // Limpiamos lo viejo y aplicamos lo nuevo
+      useProductStore.getState().clearFilters(); 
       filterByCategory(categoryName);
     }, 200); 
   };
+
   const handleOffersAction = () => {
     if (!isOffersActive) {
       setIsMobileMenuOpen(false);
       
-      // Navegamos primero
+      // Igual que arriba: navegamos para activar el spinner azul
       router.push(`/productos?oferta=true`);
 
       // Filtramos después del "salto" visual al spinner
       setTimeout(() => {
+        useProductStore.getState().clearFilters();
         filterByOffers();
-      }, 100);
+      }, 200);
     }
   };
   const handleLogout = async () => {
