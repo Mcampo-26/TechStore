@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense, useMemo } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useProductStore } from "@/store/useProductStore";
 import { Product } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,22 +29,23 @@ function ProductosContent({ initialProducts = [] }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  // 1. Eliminamos el bloqueo de 'mounted' para el renderizado inicial.
-  // Solo lo usamos para disparar los filtros de la URL una vez que el cliente está listo.
   const [hasMounted, setHasMounted] = useState(false);
+  // NUEVO: Estado para evitar que el cartel de "Sin coincidencias" salte antes del spinner
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const categoriaURL = searchParams.get('categoria');
   const esOferta = searchParams.get('oferta') === "true";
   const hayFiltroBusqueda = searchQuery !== "";
 
-  // 2. Sincronización inmediata de productos
   useEffect(() => {
     setProducts(initialProducts);
     setHasMounted(true);
-    // No usamos 'instant' aquí para no romper la experiencia si el usuario vuelve atrás
+    
+    // Pequeño delay para asegurar que la sincronización de filtros no muestre el cartel de error
+    const timer = setTimeout(() => setIsInitialLoading(false), 300);
+    return () => clearTimeout(timer);
   }, [initialProducts, setProducts]);
 
-  // 3. Aplicación de filtros desde la URL
   useEffect(() => {
     if (hasMounted) {
       if (esOferta) {
@@ -57,8 +58,6 @@ function ProductosContent({ initialProducts = [] }: Props) {
     }
   }, [categoriaURL, esOferta, hasMounted, filterByCategory, filterByOffers]);
 
-  // Si no ha montado, mostramos los productos iniciales (SSR), 
-  // si ya montó, mostramos los filtrados del store.
   const displayList = hasMounted ? filteredProducts : initialProducts;
 
   const volverAlCatalogo = () => {
@@ -70,9 +69,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { 
-        staggerChildren: 0.05 
-      },
+      transition: { staggerChildren: 0.05 },
     },
   };
   
@@ -83,7 +80,6 @@ function ProductosContent({ initialProducts = [] }: Props) {
       y: 0,
       transition: {
         duration: 0.5,
-        // Usamos "as any" o el tipado correcto para que TS no se queje de la curva Bézier
         ease: [0.22, 1, 0.36, 1] as any, 
       },
     },
@@ -91,6 +87,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
 
   return (
     <div className="min-h-screen max-w-7xl mx-auto px-4 pt-24 pb-20">
+      {/* Cabecera de Volver */}
       <div className="h-10 mb-2">
         <AnimatePresence>
           {(hayFiltroBusqueda || (categoriaURL && categoriaURL !== "Todas") || esOferta) && (
@@ -120,7 +117,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
             {esOferta ? "Ofertas Especiales" : (storeCategory === "Todas" ? "Catálogo" : storeCategory)}
           </h1>
           <p className="text-sm font-bold opacity-40 mt-2 uppercase tracking-widest">
-            {displayList.length} Productos encontrados
+            {isInitialLoading ? "Cargando..." : `${displayList.length} Productos encontrados`}
           </p>
         </motion.div>
         <div className="w-full md:w-80">
@@ -128,6 +125,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
         </div>
       </div>
 
+      {/* RENDERIZADO DE PRODUCTOS */}
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"
         initial="hidden"
@@ -147,7 +145,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
                   <img
                     src={product.image}
                     alt={product.name}
-                    loading={index < 4 ? "eager" : "lazy"} // Las primeras 4 cargan de inmediato
+                    loading={index < 4 ? "eager" : "lazy"}
                     className="w-full h-full object-contain transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110 group-hover:-translate-y-4 drop-shadow-xl"
                   />
                   {product.isOferta && (
@@ -182,14 +180,14 @@ function ProductosContent({ initialProducts = [] }: Props) {
                     </div>
                   </div>
                 </div>
-                <div className="absolute -inset-24 bg-blue-500/10 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               </Link>
             </motion.div>
           );
         })}
       </motion.div>
 
-      {displayList.length === 0 && (
+      {/* ESTADO VACÍO (Con protección contra parpadeo) */}
+      {displayList.length === 0 && !isInitialLoading && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -209,20 +207,18 @@ function ProductosContent({ initialProducts = [] }: Props) {
           </div>
         </motion.div>
       )}
+
+      {/* Placeholder invisible para mantener el layout mientras carga */}
+      {displayList.length === 0 && isInitialLoading && (
+        <div className="h-[400px]" />
+      )}
     </div>
   );
 }
 
 export default function ProductosClientContent(props: Props) {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-[10px] font-black tracking-[0.4em] opacity-20 uppercase">Iniciando Catálogo...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={null}>
       <ProductosContent {...props} />
     </Suspense>
   );
