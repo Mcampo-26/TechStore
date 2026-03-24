@@ -23,6 +23,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
     setSearchQuery, 
     filterByCategory,
     filterByOffers,
+    isLoading: storeLoading, // Usamos el loading global del store
     activeCategory: storeCategory 
   } = useProductStore();
   
@@ -30,22 +31,18 @@ function ProductosContent({ initialProducts = [] }: Props) {
   const router = useRouter();
   
   const [hasMounted, setHasMounted] = useState(false);
-  // NUEVO: Estado para evitar que el cartel de "Sin coincidencias" salte antes del spinner
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const categoriaURL = searchParams.get('categoria');
   const esOferta = searchParams.get('oferta') === "true";
   const hayFiltroBusqueda = searchQuery !== "";
 
+  // 1. Sincronización inicial con los productos del servidor
   useEffect(() => {
     setProducts(initialProducts);
     setHasMounted(true);
-    
-    // Pequeño delay para asegurar que la sincronización de filtros no muestre el cartel de error
-    const timer = setTimeout(() => setIsInitialLoading(false), 300);
-    return () => clearTimeout(timer);
   }, [initialProducts, setProducts]);
 
+  // 2. Aplicación de filtros según la URL
   useEffect(() => {
     if (hasMounted) {
       if (esOferta) {
@@ -117,7 +114,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
             {esOferta ? "Ofertas Especiales" : (storeCategory === "Todas" ? "Catálogo" : storeCategory)}
           </h1>
           <p className="text-sm font-bold opacity-40 mt-2 uppercase tracking-widest">
-            {isInitialLoading ? "Cargando..." : `${displayList.length} Productos encontrados`}
+            {storeLoading ? "Verificando inventario..." : `${displayList.length} Productos encontrados`}
           </p>
         </motion.div>
         <div className="w-full md:w-80">
@@ -180,14 +177,15 @@ function ProductosContent({ initialProducts = [] }: Props) {
                     </div>
                   </div>
                 </div>
+                <div className="absolute -inset-24 bg-blue-500/10 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
               </Link>
             </motion.div>
           );
         })}
       </motion.div>
 
-      {/* ESTADO VACÍO (Con protección contra parpadeo) */}
-      {displayList.length === 0 && !isInitialLoading && (
+      {/* ESTADO VACÍO CORREGIDO: Solo aparece si ya no está cargando y no hay productos */}
+      {hasMounted && displayList.length === 0 && !storeLoading && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -196,7 +194,7 @@ function ProductosContent({ initialProducts = [] }: Props) {
           <div className="relative z-10 flex flex-col items-center text-center">
             <h3 className="text-2xl font-black text-[var(--foreground)] mb-2 uppercase italic">Sin coincidencias</h3>
             <p className="text-sm font-bold text-[var(--foreground)] opacity-40 mb-10 uppercase tracking-widest">
-              No hay productos para tu búsqueda
+              No hay productos disponibles para la selección actual
             </p>
             <button
               onClick={volverAlCatalogo}
@@ -208,9 +206,9 @@ function ProductosContent({ initialProducts = [] }: Props) {
         </motion.div>
       )}
 
-      {/* Placeholder invisible para mantener el layout mientras carga */}
-      {displayList.length === 0 && isInitialLoading && (
-        <div className="h-[400px]" />
+      {/* Si está en proceso de filtrado y no hay nada que mostrar aún, mantenemos el espacio */}
+      {displayList.length === 0 && storeLoading && (
+        <div className="h-[60vh] w-full" />
       )}
     </div>
   );

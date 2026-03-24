@@ -56,38 +56,42 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
   const handleCategoryAction = (categoryName: string) => {
-    // 1. Cerramos los menús visualmente primero
+    // 1. Obtenemos la categoría que ya está activa en el Store
+    const activeCategory = useProductStore.getState().activeCategory;
+
+    // 2. Si el usuario cliquea la misma categoría, solo cerramos menús y salimos
+    if (activeCategory === categoryName) {
+      setIsMobileMenuOpen(false);
+      setIsDropdownOpen(false);
+      return; 
+    }
+
+    // 3. Si es una categoría DISTINTA, procedemos con la navegación y el spinner
     setIsMobileMenuOpen(false);
     setIsDropdownOpen(false);
 
-    // 2. DISPARAMOS LA NAVEGACIÓN PRIMERO.
-    // Al hacer router.push, el 'RouteChangeListener' detecta el cambio
-    // y monta el Spinner azul sobre los productos actuales (viejos).
     router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
 
-    // 3. ESPERAMOS A QUE EL SPINNER ESTÉ PUESTO.
-    // Con 150ms-200ms aseguramos que el Spinner ya tapó la pantalla.
-    // Recién ahí limpiamos y filtramos en el "background" (detrás del spinner).
     setTimeout(() => {
-      // Limpiamos lo viejo y aplicamos lo nuevo
-      useProductStore.getState().clearFilters(); 
-      filterByCategory(categoryName);
-    }, 200); 
+      useProductStore.getState().filterByCategory(categoryName);
+    }, 150); 
   };
 
   const handleOffersAction = () => {
-    if (!isOffersActive) {
-      setIsMobileMenuOpen(false);
-      
-      // Igual que arriba: navegamos para activar el spinner azul
-      router.push(`/productos?oferta=true`);
+    const activeCategory = useProductStore.getState().activeCategory;
 
-      // Filtramos después del "salto" visual al spinner
-      setTimeout(() => {
-        useProductStore.getState().clearFilters();
-        filterByOffers();
-      }, 200);
+    // Si ya estamos en Ofertas, no hacemos nada
+    if (activeCategory === "Ofertas") {
+      setIsMobileMenuOpen(false);
+      return;
     }
+
+    setIsMobileMenuOpen(false);
+    router.push(`/productos?oferta=true`);
+
+    setTimeout(() => {
+      useProductStore.getState().filterByOffers();
+    }, 150);
   };
   const handleLogout = async () => {
     setIsLoggingOut(true);
