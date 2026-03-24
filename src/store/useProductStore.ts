@@ -7,9 +7,13 @@ interface ProductState {
   currentProduct: Product | null;
   isLoading: boolean;
   searchQuery: string;
-  activeCategory: string;        // <--- Nombre correcto
+  activeCategory: string; 
   
+  // Acciones
   setProducts: (products: Product[]) => void;
+  updateProductInList: (updatedProduct: Product) => void;
+  addProductToList: (product: Product) => void;
+  deleteProductFromList: (productId: string) => void;
   setCurrentProduct: (product: Product | null) => void;
   setLoading: (status: boolean) => void;
   setSearchQuery: (query: string) => void;
@@ -56,6 +60,34 @@ export const useProductStore = create<ProductState>((set, get) => ({
         isLoading: false
       };
     });
+  },
+
+  updateProductInList: (updatedProduct) => {
+    const formatted = { ...updatedProduct, id: updatedProduct._id || updatedProduct.id };
+    
+    set((state) => ({
+      products: state.products.map(p => 
+        (p._id === formatted._id || p.id === formatted.id) ? formatted : p
+      ),
+      filteredProducts: state.filteredProducts.map(p => 
+        (p._id === formatted._id || p.id === formatted.id) ? formatted : p
+      )
+    }));
+  },
+
+  addProductToList: (product) => {
+    const formatted = { ...product, id: product._id || product.id };
+    set((state) => ({
+      products: [formatted, ...state.products],
+      filteredProducts: [formatted, ...state.filteredProducts]
+    }));
+  },
+
+  deleteProductFromList: (productId) => {
+    set((state) => ({
+      products: state.products.filter(p => p._id !== productId && p.id !== productId),
+      filteredProducts: state.filteredProducts.filter(p => p._id !== productId && p.id !== productId)
+    }));
   },
 
   applyFilters: () => {
