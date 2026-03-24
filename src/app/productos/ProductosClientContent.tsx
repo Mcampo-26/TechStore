@@ -1,223 +1,159 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
-import { useProductStore } from "@/store/useProductStore";
+import React, { useMemo } from "react";
 import { Product } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SearchInput } from "@/components/layout/SearchInput";
 import { ChevronLeft, ArrowUpRight } from "lucide-react";
-import { Variants } from "framer-motion";
 
 interface Props {
   initialProducts: Product[];
-  activeCategory: string;
 }
 
-function ProductosContent({ initialProducts = [] }: Props) {
-  const { 
-    filteredProducts, 
-    setProducts, 
-    searchQuery, 
-    setSearchQuery, 
-    filterByCategory,
-    filterByOffers,
-    isLoading: storeLoading, // Usamos el loading global del store
-    activeCategory: storeCategory 
-  } = useProductStore();
-  
+export default function ProductosClientContent({ initialProducts = [] }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
-  const [hasMounted, setHasMounted] = useState(false);
 
-  const categoriaURL = searchParams.get('categoria');
+  // --- 1. FUENTE DE VERDAD ÚNICA (URL) ---
+  const categoriaURL = searchParams.get('categoria') || "Todas";
   const esOferta = searchParams.get('oferta') === "true";
-  const hayFiltroBusqueda = searchQuery !== "";
+  const query = searchParams.get('q')?.toLowerCase() || "";
 
-  // 1. Sincronización inicial con los productos del servidor
-  useEffect(() => {
-    setProducts(initialProducts);
-    setHasMounted(true);
-  }, [initialProducts, setProducts]);
+  // --- 2. CÁLCULO SINCRÓNICO TOTAL ---
+  // Calculamos título y productos JUNTOS en el mismo ciclo de render
+  const { title, filteredProducts } = useMemo(() => {
+    const products = initialProducts.filter(product => {
+      if (esOferta && !product.isOferta) return false;
+      if (categoriaURL !== "Todas" && !esOferta && product.category !== categoriaURL) return false;
+      if (query && !product.name.toLowerCase().includes(query)) return false;
+      return true;
+    });
 
-  // 2. Aplicación de filtros según la URL
-  useEffect(() => {
-    if (hasMounted) {
-      if (esOferta) {
-        filterByOffers();
-      } else if (categoriaURL) {
-        filterByCategory(categoriaURL);
-      } else {
-        filterByCategory("Todas");
-      }
-    }
-  }, [categoriaURL, esOferta, hasMounted, filterByCategory, filterByOffers]);
+    const displayTitle = esOferta ? "Ofertas" : (categoriaURL === "Todas" ? "Catálogo" : categoriaURL);
 
-  const displayList = hasMounted ? filteredProducts : initialProducts;
+    return { title: displayTitle, filteredProducts: products };
+  }, [initialProducts, categoriaURL, esOferta, query]);
 
-  const volverAlCatalogo = () => {
-    setSearchQuery("");
-    router.push('/productos');
-  };
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.05 },
-    },
-  };
-  
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: [0.22, 1, 0.36, 1] as any, 
-      },
-    },
-  };
+  const hayFiltroActivo = categoriaURL !== "Todas" || esOferta || query !== "";
 
   return (
     <div className="min-h-screen max-w-7xl mx-auto px-4 pt-24 pb-20">
-      {/* Cabecera de Volver */}
+      
+      {/* Botón Volver */}
       <div className="h-10 mb-2">
         <AnimatePresence>
-          {(hayFiltroBusqueda || (categoriaURL && categoriaURL !== "Todas") || esOferta) && (
+          {hayFiltroActivo && (
             <motion.button
+              key="btn-back"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
-              onClick={volverAlCatalogo}
-              className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 dark:text-blue-400 hover:opacity-70 transition-all"
+              onClick={() => router.push('/productos')}
+              className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 dark:text-blue-400"
             >
               <div className="p-2 rounded-full border border-blue-600/20 group-hover:bg-blue-600 group-hover:text-white transition-all">
                 <ChevronLeft size={14} />
               </div>
-              <span>Volver al Catálogo Completo</span>
+              <span>Ver Catálogo Completo</span>
             </motion.button>
           )}
         </AnimatePresence>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-        <motion.div
-          initial={{ opacity: 0, x: -15 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-[var(--foreground)]">
-            {esOferta ? "Ofertas Especiales" : (storeCategory === "Todas" ? "Catálogo" : storeCategory)}
-          </h1>
-          <p className="text-sm font-bold opacity-40 mt-2 uppercase tracking-widest">
-            {storeLoading ? "Verificando inventario..." : `${displayList.length} Productos encontrados`}
-          </p>
-        </motion.div>
-        <div className="w-full md:w-80">
-          <SearchInput />
-        </div>
-      </div>
-
-      {/* RENDERIZADO DE PRODUCTOS */}
+      {/* Contenedor Principal Animado por KEY */}
+      {/* El uso de key={title} asegura que cuando cambies de categoría en el Navbar, 
+          toda la sección se trate como una transición nueva y coordinada */}
       <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
-        key={storeCategory + searchQuery}
+        key={title + esOferta} 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
       >
-        {displayList.map((product, index) => {
-          const id = product._id || (product as any).id;
-          return (
-            <motion.div key={id} variants={itemVariants} className="h-full">
-              <Link
-                href={`/productos/${id}`}
-                className="group relative flex flex-col h-full bg-[var(--card-bg)] border border-[var(--border-theme)] rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)]"
-              >
-                <div className="relative aspect-square w-full bg-neutral-500/5 dark:bg-white/5 flex items-center justify-center p-12 transition-colors duration-500 group-hover:bg-transparent">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    loading={index < 4 ? "eager" : "lazy"}
-                    className="w-full h-full object-contain transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110 group-hover:-translate-y-4 drop-shadow-xl"
-                  />
-                  {product.isOferta && (
-                    <div className="absolute top-8 left-8">
-                      <span className="backdrop-blur-md bg-blue-600/90 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg border border-white/10">
-                        Oferta Especial
-                      </span>
-                    </div>
-                  )}
-                </div>
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+          <div>
+            <motion.h1 
+              layoutId="main-title"
+              className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-[var(--foreground)]"
+            >
+              {title}
+            </motion.h1>
+            <p className="text-sm font-bold opacity-40 mt-2 uppercase tracking-widest">
+              {filteredProducts.length} Productos encontrados
+            </p>
+          </div>
+          <div className="w-full md:w-80">
+            <SearchInput />
+          </div>
+        </div>
 
-                <div className="p-8 flex flex-col flex-grow">
-                  <div className="space-y-1 mb-6">
-                    <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] text-[var(--foreground)]">
-                      {product.category || "Hardware"}
-                    </p>
-                    <h3 className="text-xl font-bold tracking-tight text-[var(--foreground)] leading-[1.2] transition-colors duration-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+        {/* GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <AnimatePresence mode="popLayout">
+            {filteredProducts.map((product) => (
+              <motion.div
+                layout
+                key={product._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="h-full"
+              >
+                <Link
+                  href={`/productos/${product._id}`}
+                  className="group relative flex flex-col h-full bg-[var(--card-bg)] border border-[var(--border-theme)] rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:shadow-2xl"
+                >
+                  <div className="relative aspect-square w-full bg-neutral-500/5 dark:bg-white/5 flex items-center justify-center p-12">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110"
+                    />
+                    {product.isOferta && (
+                      <div className="absolute top-8 left-8">
+                        <span className="backdrop-blur-md bg-blue-600/90 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full">
+                          Oferta
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-8 flex flex-grow flex-col">
+                    <p className="text-[10px] font-black opacity-30 uppercase mb-1">{product.category}</p>
+                    <h3 className="text-xl font-bold leading-tight group-hover:text-blue-600 transition-colors">
                       {product.name}
                     </h3>
-                  </div>
-
-                  <div className="mt-auto flex items-end justify-between pt-6 border-t border-[var(--border-theme)]/50">
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-bold opacity-30 uppercase tracking-tighter text-[var(--foreground)]">Precio Final</span>
-                      <p className="text-3xl font-black text-[var(--foreground)] tracking-tighter">
-                        <span className="text-blue-600 dark:text-blue-400 text-lg mr-0.5">$</span>
-                        {Number(product.price).toLocaleString('es-AR')}
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 rounded-full border border-[var(--border-theme)] flex items-center justify-center text-[var(--foreground)] transition-all duration-500 group-hover:bg-blue-600 group-hover:border-blue-600 group-hover:text-white group-hover:rotate-45">
-                      <ArrowUpRight size={22} />
+                    <div className="mt-auto pt-6 flex justify-between items-end border-t border-[var(--border-theme)]/50">
+                      <div>
+                        <span className="text-[9px] font-bold opacity-30 uppercase">Precio</span>
+                        <p className="text-3xl font-black italic">
+                          ${Number(product.price).toLocaleString('es-AR')}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 rounded-full border border-[var(--border-theme)] flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
+                        <ArrowUpRight size={18} />
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="absolute -inset-24 bg-blue-500/10 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-              </Link>
-            </motion.div>
-          );
-        })}
+                </Link>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       </motion.div>
 
-      {/* ESTADO VACÍO CORREGIDO: Solo aparece si ya no está cargando y no hay productos */}
-      {hasMounted && displayList.length === 0 && !storeLoading && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden flex flex-col items-center justify-center py-28 px-8 border-2 border-dashed border-[var(--border-theme)] rounded-[3rem] bg-[var(--card-bg)]/30"
-        >
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <h3 className="text-2xl font-black text-[var(--foreground)] mb-2 uppercase italic">Sin coincidencias</h3>
-            <p className="text-sm font-bold text-[var(--foreground)] opacity-40 mb-10 uppercase tracking-widest">
-              No hay productos disponibles para la selección actual
-            </p>
-            <button
-              onClick={volverAlCatalogo}
-              className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] hover:bg-blue-700 transition-all"
-            >
-              Limpiar Filtros
-            </button>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Si está en proceso de filtrado y no hay nada que mostrar aún, mantenemos el espacio */}
-      {displayList.length === 0 && storeLoading && (
-        <div className="h-[60vh] w-full" />
+      {/* ESTADO VACÍO */}
+      {filteredProducts.length === 0 && (
+        <div className="py-20 text-center border-2 border-dashed border-[var(--border-theme)] rounded-[3rem]">
+          <h3 className="text-2xl font-black uppercase italic">Sin resultados</h3>
+          <button onClick={() => router.push('/productos')} className="mt-6 px-8 py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest">
+            Limpiar Filtros
+          </button>
+        </div>
       )}
     </div>
-  );
-}
-
-export default function ProductosClientContent(props: Props) {
-  return (
-    <Suspense fallback={null}>
-      <ProductosContent {...props} />
-    </Suspense>
   );
 }

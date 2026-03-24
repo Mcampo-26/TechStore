@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense, useCallback } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Loading from "@/app/productos/[id]/loading"; 
 
 function RouteChangeHandler() {
@@ -9,38 +9,30 @@ function RouteChangeHandler() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Función para activar el loading instantáneamente
-  const showLoading = useCallback(() => {
-    document.body.style.cursor = 'wait';
-    setIsLoading(true);
-  }, []);
-
   useEffect(() => {
-    // 1. ESCUCHA NATIVA (BOTÓN ATRÁS)
-    // Esto detecta el click en "atrás" antes de que Next.js procese la ruta
-    window.addEventListener("popstate", showLoading);
-
-    // 2. DETECCIÓN POR CAMBIO DE RUTA (LINKS)
-    showLoading();
+    // 1. DISPARO INSTANTÁNEO (FUERA DE REACT)
+    // Esto se ejecuta antes de que React procese el estado
+    document.body.style.cursor = 'wait'; 
+    
+    setIsLoading(true);
   
     const timer = setTimeout(() => {
       setIsLoading(false);
       document.body.style.cursor = 'default';
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    }, 400); // Reducimos a 400ms para que se sienta más "eléctrico"
+      window.scrollTo(0, 0);
+    }, 450);
   
     return () => {
-      window.removeEventListener("popstate", showLoading);
       clearTimeout(timer);
       document.body.style.cursor = 'default';
     };
-  }, [pathname, searchParams, showLoading]);
+  }, [pathname, searchParams]);
 
   if (!isLoading) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-[var(--background)] flex items-center justify-center pointer-events-auto">
-      {/* Eliminamos el backdrop-blur para ganar velocidad de pintado (GPU) */}
+    // bg-opacity para que si hay un micro-segundo de delay, se vea fluido
+    <div className="fixed inset-0 z-[9999] bg-[var(--background)] flex items-center justify-center backdrop-blur-sm">
       <Loading />
     </div>
   );

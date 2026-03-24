@@ -2,12 +2,12 @@ import { create } from 'zustand';
 import { Product } from '@/types';
 
 interface ProductState {
-  products: Product[];           // Backup total
-  filteredProducts: Product[];   // Lo que se ve
+  products: Product[];           // Backup total (Servidor)
+  filteredProducts: Product[];   // Lo que se ve en el catálogo
   currentProduct: Product | null;
   isLoading: boolean;
   searchQuery: string;
-  activeCategory: string; 
+  activeCategory: string;        // <--- Nombre correcto
   
   setProducts: (products: Product[]) => void;
   setCurrentProduct: (product: Product | null) => void;
@@ -17,7 +17,6 @@ interface ProductState {
   filterByOffers: () => void;
   clearFilters: () => void;
   applyFilters: () => void;
-  updateProductInList: (updatedProduct: Product) => void;
 }
 
 export const useProductStore = create<ProductState>((set, get) => ({
@@ -28,34 +27,56 @@ export const useProductStore = create<ProductState>((set, get) => ({
   searchQuery: "",
   activeCategory: "Todas",
 
-  setProducts: (products) => {
-    const safeProducts = Array.isArray(products) ? products : [];
-    const formattedProducts = safeProducts.map((p: any) => ({ 
-      ...p, 
-      id: p._id || p.id 
-    }));
-    
-    // Guardamos el backup
-    set({ products: formattedProducts });
+  setProducts: (newProducts) => {
+    const formatted = Array.isArray(newProducts) 
+      ? newProducts.map(p => ({ ...p, id: p._id || p.id })) 
+      : [];
 
-    // Si ya tenemos una categoría seteada (ej. desde el Navbar),
-    // aplicamos el filtro sobre los productos que acaban de llegar.
-    if (get().activeCategory !== "Todas" && get().activeCategory !== "") {
-      get().applyFilters();
-    } else {
-      set({ filteredProducts: formattedProducts });
-    }
-    
-    set({ isLoading: false });
+    set((state) => {
+      const { searchQuery, activeCategory } = state;
+      let result = [...formatted];
+
+      if (activeCategory === "Ofertas") {
+        result = result.filter(p => p.isOferta);
+      } else if (activeCategory !== "Todas" && activeCategory !== "Catálogo") {
+        result = result.filter(p => p.category === activeCategory);
+      }
+
+      if (searchQuery.trim() !== "") {
+        const q = searchQuery.toLowerCase();
+        result = result.filter(p => 
+          p.name.toLowerCase().includes(q) || 
+          p.category?.toLowerCase().includes(q)
+        );
+      }
+
+      return {
+        products: formatted,
+        filteredProducts: result,
+        isLoading: false
+      };
+    });
   },
 
-  clearFilters: () => {
-    // Solo reseteamos el estado visual, NO el backup de productos
-    set({ 
-      filteredProducts: [], 
-      activeCategory: "Todas", 
-      searchQuery: "" 
-    });
+  applyFilters: () => {
+    const { products, searchQuery, activeCategory } = get();
+    let result = [...products];
+
+    if (activeCategory === "Ofertas") {
+      result = result.filter(p => p.isOferta);
+    } else if (activeCategory !== "Todas" && activeCategory !== "Catálogo") {
+      result = result.filter(p => p.category === activeCategory);
+    }
+
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.category?.toLowerCase().includes(q)
+      );
+    }
+
+    set({ filteredProducts: result, isLoading: false });
   },
 
   setSearchQuery: (query) => {
@@ -73,38 +94,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
     get().applyFilters();
   },
 
-  applyFilters: () => {
-    const { products, searchQuery, activeCategory } = get();
-
-    // Si no hay productos en el backup, no podemos filtrar aún
-    if (products.length === 0) {
-      // No seteamos isLoading en false aquí porque todavía estamos esperando el fetch inicial
-      return;
-    }
-
-    let result = [...products];
-
-    // 1. Filtrar por Categoría u Ofertas
-    if (activeCategory === "Ofertas") {
-      result = result.filter(p => p.isOferta === true);
-    } else if (activeCategory && activeCategory !== "Todas" && activeCategory !== "Catálogo") {
-      result = result.filter(p => p.category === activeCategory);
-    }
-
-    // 2. Filtrar por Búsqueda
-    if (searchQuery.trim() !== "") {
-      const lowerQuery = searchQuery.toLowerCase();
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(lowerQuery) || 
-        (p.category && p.category.toLowerCase().includes(lowerQuery))
-      );
-    }
-
-    // 3. ACTUALIZACIÓN FINAL
-    set({ 
-      filteredProducts: result,
-      isLoading: false // <--- IMPORTANTE: Avisamos que el filtro terminó
-    });
+  clearFilters: () => {
+    set((state) => ({
+      activeCategory: "Todas",
+      searchQuery: "",
+      filteredProducts: state.products 
+    }));
   },
 
   setCurrentProduct: (product) => set({ 
@@ -112,18 +107,4 @@ export const useProductStore = create<ProductState>((set, get) => ({
   }),
 
   setLoading: (status) => set({ isLoading: status }),
-
-  updateProductInList: (updatedProduct) => set((state) => {
-    const update = (p: Product) => 
-      (p._id === updatedProduct._id || p.id === updatedProduct.id) ? updatedProduct : p;
-
-    return {
-      products: state.products.map(update),
-      filteredProducts: state.filteredProducts.map(update),
-      currentProduct: 
-        (state.currentProduct?._id === updatedProduct._id || state.currentProduct?.id === updatedProduct.id)
-        ? updatedProduct 
-        : state.currentProduct
-    };
-  }),
 }));

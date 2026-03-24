@@ -18,7 +18,7 @@ export default async function Page() {
       <Suspense fallback={<div className="pt-40 text-center opacity-20 font-black uppercase tracking-[0.5em]">Cargando Catálogo...</div>}>
         <ProductosClientContent 
           initialProducts={products || []} 
-          activeCategory="Catálogo" 
+          
         />
       </Suspense>
     </main>
