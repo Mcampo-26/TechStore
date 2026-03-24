@@ -56,17 +56,32 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
   const handleCategoryAction = (categoryName: string) => {
-    filterByCategory(categoryName);
-    router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
+    // 1. Cerramos menús primero
     setIsMobileMenuOpen(false);
+    setIsDropdownOpen(false);
+
+    // 2. Navegamos primero para que el RouteChangeListener atrape el evento
+    router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
+
+    // 3. Esperamos un instante antes de filtrar internamente para que el 
+    // spinner ya esté cubriendo la pantalla
+    setTimeout(() => {
+      filterByCategory(categoryName);
+    }, 100); 
   };
 
   const handleOffersAction = () => {
     if (!isOffersActive) {
-      filterByOffers();
+      setIsMobileMenuOpen(false);
+      
+      // Navegamos primero
       router.push(`/productos?oferta=true`);
+
+      // Filtramos después del "salto" visual al spinner
+      setTimeout(() => {
+        filterByOffers();
+      }, 100);
     }
-    setIsMobileMenuOpen(false);
   };
   const handleLogout = async () => {
     setIsLoggingOut(true);
