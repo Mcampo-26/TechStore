@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react"; // 1. Agregamos Suspense aquí
 import { useProductStore } from "@/store/useProductStore";
 import { Product } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,8 +14,8 @@ interface Props {
   activeCategory: string;
 }
 
-export default function ProductosClientContent({ initialProducts = [], activeCategory }: Props) {
-  // Traemos las acciones necesarias del nuevo Store
+// 2. Renombramos la función interna
+function ProductosContent({ initialProducts = [] }: Props) {
   const { 
     filteredProducts, 
     setProducts, 
@@ -30,19 +30,16 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  // Parámetros de la URL
   const categoriaURL = searchParams.get('categoria');
   const esOferta = searchParams.get('oferta') === "true";
   const hayFiltroBusqueda = searchQuery !== "";
 
-  // 1. Sincronización Inicial de datos (Server -> Zustand)
   useEffect(() => {
     setProducts(initialProducts);
     setMounted(true);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [initialProducts, setProducts]);
 
-  // 2. ESCUCHA DE URL: Este efecto sincroniza los filtros cuando cambia la URL
   useEffect(() => {
     if (mounted) {
       if (esOferta) {
@@ -55,7 +52,6 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
     }
   }, [categoriaURL, esOferta, mounted, filterByCategory, filterByOffers]);
 
-  // 3. LA FUENTE DE VERDAD: Ahora siempre usamos filteredProducts del store
   const displayList = filteredProducts;
 
   const volverAlCatalogo = () => {
@@ -65,7 +61,6 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
 
   if (!mounted) return null;
 
-  // Animaciones (Tus variantes originales)
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -88,8 +83,6 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
 
   return (
     <div className="min-h-screen max-w-7xl mx-auto px-4 pt-24 pb-20">
-      
-      {/* Botón Volver */}
       <div className="h-10 mb-2">
         <AnimatePresence>
           {(hayFiltroBusqueda || (categoriaURL && categoriaURL !== "Todas") || esOferta) && (
@@ -109,7 +102,6 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
         </AnimatePresence>
       </div>
 
-      {/* Cabecera dinámica según el Store */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <motion.div
           initial={{ opacity: 0, x: -15 }}
@@ -128,13 +120,12 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
         </div>
       </div>
 
-      {/* Grilla de Productos */}
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        key={storeCategory + searchQuery} // Forzamos reinicio de animación al filtrar
+        key={storeCategory + searchQuery}
       >
         {displayList.map((product) => {
           const id = product._id || (product as any).id;
@@ -189,7 +180,6 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
         })}
       </motion.div>
 
-      {/* Estado vacío */}
       {displayList.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -197,38 +187,25 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
           transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
           className="relative overflow-hidden flex flex-col items-center justify-center py-28 px-8 border-2 border-dashed border-[var(--border-theme)] rounded-[3rem] bg-[var(--card-bg)]/30 shadow-xl"
         >
-          {/* Luces de fondo sutiles */}
           <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-blue-600/5 blur-[100px] rounded-full pointer-events-none" />
 
           <div className="relative z-10 flex flex-col items-center text-center">
-            {/* Icono de búsqueda */}
             <div className="mb-6 p-5 bg-blue-600/10 rounded-full">
-              <svg 
-                className="w-10 h-10 text-blue-600 opacity-80" 
-                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-              >
+              <svg className="w-10 h-10 text-blue-600 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-
-            <h3 className="text-2xl font-black text-[var(--foreground)] mb-2 tracking-tight uppercase italic">
-              Sin coincidencias
-            </h3>
-            
+            <h3 className="text-2xl font-black text-[var(--foreground)] mb-2 tracking-tight uppercase italic">Sin coincidencias</h3>
             <p className="text-sm font-bold text-[var(--foreground)] opacity-40 max-w-[260px] mb-10 leading-relaxed uppercase tracking-widest">
               No hay productos para tu búsqueda actual
             </p>
-
             <button
               onClick={volverAlCatalogo}
               className="group relative flex items-center gap-3 px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] transition-all duration-300 shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 overflow-hidden"
             >
               <span className="relative z-10">Limpiar Filtros</span>
-              <svg 
-                className="w-4 h-4 relative z-10 transition-transform duration-500 group-hover:rotate-180" 
-                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-              >
+              <svg className="w-4 h-4 relative z-10 transition-transform duration-500 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
@@ -236,5 +213,14 @@ export default function ProductosClientContent({ initialProducts = [], activeCat
         </motion.div>
       )}
     </div>
+  );
+}
+
+// 3. EXPORTACIÓN FINAL CON SUSPENSE (Esto es lo que arregla el error de Vercel)
+export default function ProductosClientContent(props: Props) {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-black opacity-20 uppercase tracking-[0.4em]">Cargando...</div>}>
+      <ProductosContent {...props} />
+    </Suspense>
   );
 }
