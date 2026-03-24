@@ -56,20 +56,21 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
   const handleCategoryAction = (categoryName: string) => {
-    // 1. Cerramos menús primero
+    // 1. Vaciamos la lista visual de inmediato
+    useProductStore.getState().clearFilters();
+    
     setIsMobileMenuOpen(false);
     setIsDropdownOpen(false);
 
-    // 2. Navegamos primero para que el RouteChangeListener atrape el evento
+    // 2. Navegamos (esto activa el Spinner global)
     router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
 
-    // 3. Esperamos un instante antes de filtrar internamente para que el 
-    // spinner ya esté cubriendo la pantalla
+    // 3. Ejecutamos el filtro después de un breve delay (200ms)
+    // Así, cuando el Spinner se quite, los productos ya habrán cambiado "por detrás"
     setTimeout(() => {
       filterByCategory(categoryName);
-    }, 100); 
+    }, 200); 
   };
-
   const handleOffersAction = () => {
     if (!isOffersActive) {
       setIsMobileMenuOpen(false);

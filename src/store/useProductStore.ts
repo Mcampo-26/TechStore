@@ -3,11 +3,11 @@ import { Product } from '@/types';
 
 interface ProductState {
   products: Product[];           // Base de datos completa (Backup)
-  filteredProducts: Product[];   // Lo que se muestra
+  filteredProducts: Product[];   // Lo que se muestra actualmente
   currentProduct: Product | null;
   isLoading: boolean;
   searchQuery: string;
-  activeCategory: string;        // Nueva: para recordar qué categoría hay
+  activeCategory: string;        // Recordar la categoría activa
   
   // Acciones
   setProducts: (products: Product[]) => void;
@@ -16,7 +16,8 @@ interface ProductState {
   setSearchQuery: (query: string) => void;
   filterByCategory: (category: string) => void;
   filterByOffers: () => void;
-  applyFilters: () => void;      // La función "Cerebro"
+  clearFilters: () => void;      // Nueva: Limpia la vista antes de navegar
+  applyFilters: () => void;      // El "Cerebro" de filtrado
   updateProductInList: (updatedProduct: Product) => void;
 }
 
@@ -28,6 +29,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
   searchQuery: "",
   activeCategory: "Todas",
 
+  // Seteo inicial de productos desde el servidor o API
   setProducts: (products) => {
     const safeProducts = Array.isArray(products) ? products : [];
     const formattedProducts = safeProducts.map((p: any) => ({ 
@@ -42,36 +44,51 @@ export const useProductStore = create<ProductState>((set, get) => ({
     });
   },
 
-  // 1. Solo actualiza el texto y llama al cerebro
+  // Limpia la lista visual para que el Spinner no muestre productos viejos
+  clearFilters: () => {
+    set({ 
+      filteredProducts: [], 
+      activeCategory: "", 
+      searchQuery: "" 
+    });
+  },
+
   setSearchQuery: (query) => {
     set({ searchQuery: query });
     get().applyFilters();
   },
 
-  // 2. Solo actualiza la categoría y llama al cerebro
   filterByCategory: (category) => {
+    // Si ya estamos en esa categoría, no hacemos nada
+    if (get().activeCategory === category) return;
+
     set({ activeCategory: category });
     get().applyFilters();
   },
 
-  // 3. Filtro de ofertas (puedes tratarlo como una categoría especial)
   filterByOffers: () => {
+    // Seteamos la categoría a Ofertas y disparamos el filtro
     set({ activeCategory: "Ofertas", searchQuery: "" });
-    const offers = get().products.filter(p => p.isOferta);
-    set({ filteredProducts: offers });
+    get().applyFilters();
   },
 
-  // 4. EL CEREBRO: Combina categoría Y búsqueda
+  // EL CEREBRO: Combina categoría, ofertas y búsqueda
   applyFilters: () => {
     const { products, searchQuery, activeCategory } = get();
+    
+    // Si no hay productos cargados en el backup, cancelamos
+    if (products.length === 0) return;
+
     let result = [...products];
 
-    // Primero aplicamos Categoría
-    if (activeCategory !== "Todas" && activeCategory !== "Catálogo" && activeCategory !== "") {
+    // 1. Filtrar por Categoría u Ofertas
+    if (activeCategory === "Ofertas") {
+      result = result.filter(p => p.isOferta);
+    } else if (activeCategory && activeCategory !== "Todas" && activeCategory !== "Catálogo") {
       result = result.filter(p => p.category === activeCategory);
     }
 
-    // Luego, sobre ese resultado, aplicamos búsqueda por texto
+    // 2. Filtrar por Búsqueda (sobre el resultado anterior)
     if (searchQuery.trim() !== "") {
       const lowerQuery = searchQuery.toLowerCase();
       result = result.filter(p => 
@@ -80,6 +97,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       );
     }
 
+    // Actualizamos la lista que ve el usuario
     set({ filteredProducts: result });
   },
 
