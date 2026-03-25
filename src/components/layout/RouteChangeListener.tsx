@@ -1,47 +1,55 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
-import Loading from "@/app/productos/[id]/loading"; 
-
-function RouteChangeHandler() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    // 1. DISPARO INSTANTÁNEO (FUERA DE REACT)
-    // Esto se ejecuta antes de que React procese el estado
-    document.body.style.cursor = 'wait'; 
-    
-    setIsLoading(true);
-  
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      document.body.style.cursor = 'default';
-      window.scrollTo(0, 0);
-    }, 450);
-  
-    return () => {
-      clearTimeout(timer);
-      document.body.style.cursor = 'default';
-    };
-  }, [pathname, searchParams]);
-
-  if (!isLoading) return null;
-
-  return (
-    // bg-opacity para que si hay un micro-segundo de delay, se vea fluido
-    <div className="fixed inset-0 z-[9999] bg-[var(--background)] flex items-center justify-center backdrop-blur-sm">
-      <Loading />
-    </div>
-  );
-}
+import { useEffect } from "react";
+import { useProductStore } from "@/store/useProductStore";
 
 export default function RouteChangeListener() {
-  return (
-    <Suspense fallback={null}>
-      <RouteChangeHandler />
-    </Suspense>
-  );
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const setLoading = useProductStore((state) => state.setLoading);
+
+  useEffect(() => {
+    // 1. Filtrar archivos estáticos (favicon, imágenes, etc.)
+    const isAsset = pathname.includes('.');
+    
+    // 2. Definimos las rutas que SÍ deben mostrar el Spinner
+    // 🛑 IMPORTANTE: Agregamos '/not-found' aquí porque ahora es una PÁGINA REAL
+    const validRoutes = [
+      '/', 
+      '/productos', 
+      '/contacto', 
+      '/admin', 
+      '/carrito', 
+      '/not-found', // <-- Ahora esta ruta es "amiga" del spinner
+      '/login',
+      '/register'
+    ];
+
+    const isProductDetail = pathname.startsWith('/productos/');
+    const isValid = validRoutes.includes(pathname) || isProductDetail;
+
+    // 3. Si es un archivo o una ruta que no controlamos, apagamos y salimos
+    if (isAsset || !isValid) {
+      setLoading(false);
+      document.body.style.cursor = 'default';
+      return;
+    }
+
+    // 4. Lógica del Spinner para rutas válidas
+    setLoading(true);
+    document.body.style.cursor = 'wait';
+
+    const timer = setTimeout(() => {
+      setLoading(false);
+      document.body.style.cursor = 'default';
+    }, 250); // Mantenemos los 250ms para que se aprecie la animación premium
+
+    return () => {
+      clearTimeout(timer);
+      setLoading(false);
+    };
+  }, [pathname, searchParams, setLoading]);
+
+  return null;
 }
