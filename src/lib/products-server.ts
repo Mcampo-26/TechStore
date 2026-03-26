@@ -2,76 +2,97 @@ import connectDB from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { Category } from "@/models/Category";
 import { unstable_cache } from 'next/cache';
-// 1. LISTADO GENERAL
+import mongoose from "mongoose";
+
+// --- HELPER DE RENDIMIENTO Y LIMPIEZA ---
+const parseDBDoc = (doc: any) => {
+  if (!doc) return null;
+  const obj = doc.toObject ? doc.toObject() : doc;
+  
+  // Convertimos ID a string para evitar errores de serialización en Server Components
+  obj._id = obj._id.toString();
+  
+  // FIX DE SEGURIDAD PARA IMÁGENES:
+  // Si los campos de imagen vienen vacíos o son solo espacios, los convertimos a null
+  // Esto evita el error de Next.js: "An empty string ("") was passed to the src attribute"
+  const cleanImage = (img: any) => (typeof img === 'string' && img.trim() !== "") ? img : null;
+  
+  obj.image = cleanImage(obj.image);
+  obj.image2 = cleanImage(obj.image2);
+  obj.image3 = cleanImage(obj.image3);
+  
+  // Procesamos fechas
+  if (obj.createdAt) obj.createdAt = obj.createdAt.toISOString();
+  if (obj.updatedAt) obj.updatedAt = obj.updatedAt.toISOString();
+  
+  return obj;
+};
+
+// 1. LISTADO GENERAL (Cacheado y con Proyección)
 export const getProductsServer = unstable_cache(
   async () => {
     try {
       await connectDB();
-      
-      // Traemos productos, ordenados por los más nuevos
+      // IMPORTANTE: Agregué image, image2, image3 al select para que coincidan con tu ProductCard
       const products = await Product.find({})
+        .select('name price image image2 image3 category stock isOferta descuento slug') 
         .sort({ createdAt: -1 })
         .lean();
 
-      // Limpiamos los IDs de MongoDB para evitar errores de serialización
-      return JSON.parse(JSON.stringify(products));
+      return products.map(parseDBDoc);
     } catch (error) {
       console.error("CRITICAL_DB_ERROR:", error);
       return [];
     }
   },
-  ["products-list"], // Key única para el cache
-  { 
-    revalidate: 3600, // Revalida cada hora de forma pasiva
-    tags: ["products"] // Tag para forzar actualización desde el Admin
-  }
+  ["products-list"],
+  { revalidate: 3600, tags: ["products"] }
 );
-// 2. DETALLE DE UN PRODUCTO (Por ID)
-export async function getProductById(id: string) {
-  try {
-    // Validar si el ID es un ObjectId válido de Mongo antes de conectar
-    // Esto evita viajes innecesarios a la DB si el ID está mal
-    if (id.length !== 24) return null; 
 
+// 2. DETALLE DE UN PRODUCTO
+export async function getProductById(id: string) {
+  if (!mongoose.Types.ObjectId.isValid(id)) return null;
+
+  try {
     await connectDB();
-    
-    // Agregamos un lean() para que la respuesta sea un objeto JS plano rápido
     const product = await Product.findById(id).lean(); 
-      
-    if (!product) return null;
-    
-    return JSON.parse(JSON.stringify(product));
+    return parseDBDoc(product);
   } catch (error) {
     console.error("Error obteniendo producto por ID:", error);
     return null;
   }
 }
 
-// 3. PRODUCTOS RELACIONADOS (Misma categoría, excluyendo el actual)
+// 3. PRODUCTOS RELACIONADOS
 export async function getRelatedProducts(category: string, currentProductId: string) {
+  if (!category || !mongoose.Types.ObjectId.isValid(currentProductId)) return [];
+
   try {
     await connectDB();
-    // Buscamos productos de la misma categoría, limitamos a 4 y excluimos el que ya estamos viendo
     const related = await Product.find({ 
       category: category, 
       _id: { $ne: currentProductId } 
     })
+    .select('name price image image2 image3 category slug') 
     .limit(4)
     .lean();
 
-    return JSON.parse(JSON.stringify(related));
+    return related.map(parseDBDoc);
   } catch (error) {
     console.error("Error obteniendo relacionados:", error);
     return [];
   }
 }
 
-// 4. PRODUCTOS EN OFERTA (Para la Home o banners)
+// 4. PRODUCTOS EN OFERTA
 export async function getOfferProducts() {
   try {
     await connectDB();
-    const offers = await Product.find({ isOferta: true }).limit(8).lean();
-    return JSON.parse(JSON.stringify(offers));
+    const offers = await Product.find({ isOferta: true })
+      .select('name price image image2 image3 category isOferta descuento slug')
+      .limit(8)
+      .lean();
+    return offers.map(parseDBDoc);
   } catch (error) {
     console.error("Error obteniendo ofertas:", error);
     return [];
@@ -83,7 +104,7 @@ export async function getCategoriesServer() {
   try {
     await connectDB();
     const categories = await Category.find({}).sort({ name: 1 }).lean();
-    return JSON.parse(JSON.stringify(categories));
+    return categories.map(parseDBDoc);
   } catch (error) {
     console.error("Error en getCategoriesServer:", error);
     return [];

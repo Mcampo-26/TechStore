@@ -2,11 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image'; // Importación vital
+import Image from 'next/image';
 import { ShoppingCart, Zap, ChevronRight } from 'lucide-react';
 import { Product } from '@/types';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
+
+// Imagen de respaldo para evitar el error de src=""
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1560393464-5c69a73c5770?q=80&w=500&auto=format&fit=crop";
 
 interface ProductCardProps {
   product: Product;
@@ -15,13 +18,20 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, showAddButton = false }: ProductCardProps) => {
   const addToCart = useCartStore((state) => state.addToCart);
-  const [currentImg, setCurrentImg] = useState<string>(product.image || "");
+  
+  // Determinamos la imagen inicial validando que no sea un string vacío
+  const initialImage = product.image && product.image.trim() !== "" 
+    ? product.image 
+    : FALLBACK_IMAGE;
+
+  const [currentImg, setCurrentImg] = useState<string>(initialImage);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Filtramos las imágenes para las miniaturas asegurando que sean strings válidos
   const images = [product.image, product.image2, product.image3].filter(
     (img): img is string => typeof img === 'string' && img.trim() !== ""
   );
@@ -43,6 +53,7 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
     addToCart(product, userId);
   };
 
+  // Evita errores de hidratación
   if (!mounted) return null;
 
   return (
@@ -63,12 +74,13 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
 
         <Link href={`/productos/${product._id}`} className="relative block aspect-[4/3] rounded-2xl overflow-hidden bg-white p-4">
           <Image
-            src={currentImg}
+            src={currentImg || FALLBACK_IMAGE}
             alt={product.name}
-            fill // Hace que la imagen llene el contenedor aspect-[4/3]
+            fill 
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            priority={true} // Prioriza la carga para mejorar el LCP de la auditoría
+            priority={true} 
             className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
+            onError={() => setCurrentImg(FALLBACK_IMAGE)}
           />
         </Link>
       </div>
@@ -76,7 +88,7 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
       {/* CUERPO DE LA TARJETA */}
       <div className="px-5 pb-5 flex flex-col flex-grow">
         
-        {/* MINIATURAS OPTIMIZADAS (El gran ahorro de datos) */}
+        {/* MINIATURAS OPTIMIZADAS */}
         <div className="flex gap-1.5 mb-4 justify-start">
           {images.length > 1 && images.map((img, i) => (
             <button
@@ -87,11 +99,15 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
               }`}
             >
               <Image 
-                src={img} 
+                src={img || FALLBACK_IMAGE} 
                 alt={`thumb-${i}`} 
                 fill
-                sizes="40px" // Aquí le decimos que solo baje una imagen de 40px
+                sizes="40px"
                 className="object-contain p-0.5"
+                onError={(e) => {
+                   // Si la miniatura falla, podrías ocultarla o poner fallback
+                   (e.target as any).src = FALLBACK_IMAGE;
+                }}
               />
             </button>
           ))}
