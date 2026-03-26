@@ -1,10 +1,25 @@
-import { getProductById } from "@/lib/products-server";
+import { getProductById, getProductsServer } from "@/lib/products-server"; // Importación faltante
 import ProductoDetalleClient from "./ProductoDetalleClient";
 import { notFound } from "next/navigation";
 import { Product } from "@/types";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+// ESTO ES LO QUE HACE QUE SEA INSTANTÁNEO
+export async function generateStaticParams() {
+  try {
+    const products = await getProductsServer();
+    
+    // Si tu carpeta es [id], devolvemos el objeto con la propiedad id
+    return products.map((product: any) => ({
+      id: product._id.toString(),
+    }));
+  } catch (error) {
+    console.error("Error en generateStaticParams:", error);
+    return [];
+  }
 }
 
 export default async function ProductoDetallePage({ params }: PageProps) {
@@ -18,15 +33,20 @@ export default async function ProductoDetallePage({ params }: PageProps) {
     notFound();
   }
 
-  // 3. Limpieza de tipos para TypeScript (MongoDB null -> undefined)
+  // 3. Limpieza de tipos y compatibilidad (Aseguramos que no viajen nulls molestos)
   const product: Product = {
     ...rawProduct,
     _id: String(rawProduct._id),
-    image2: rawProduct.image2 ?? undefined,
-    image3: rawProduct.image3 ?? undefined,
+    image: rawProduct.image || undefined,
+    image2: rawProduct.image2 || undefined,
+    image3: rawProduct.image3 || undefined,
+    description: rawProduct.description || "",
   } as any;
 
-  // 4. Retornamos el componente directamente. 
-  // Next.js usará automáticamente tu 'loading.tsx' mientras esto carga.
-  return <ProductoDetalleClient product={product} />;
+  // 4. Renderizado
+  return (
+    <main className="min-h-screen bg-[var(--background)]">
+       <ProductoDetalleClient product={product} />
+    </main>
+  );
 }

@@ -8,6 +8,7 @@ import { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import RouteChangeListener from "@/components/layout/RouteChangeListener";
 import GlobalSpinner from "@/components/layout/GlobalSpinner";
+import dbConnect from "@/lib/mongodb";
 
 const geistSans = Geist({ 
   variable: "--font-geist-sans", 
@@ -39,18 +40,22 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Fetch de categorías en el servidor
+  
+  // 2. CALENTAMIENTO DE CONEXIÓN (WARM-UP)
+  // Lo disparamos sin 'await' para que no frene el renderizado, 
+  // pero que empiece a abrir las 5 conexiones del pool en segundo plano.
+  dbConnect().catch((err) => console.error("MongoDB Warmup Error:", err));
+
+  // Fetch de categorías en el servidor (esto también usará la conexión abierta arriba)
   const categories = await getCategoriesServer();
 
   return (
     <html lang="es" className="scroll-smooth" suppressHydrationWarning>
       <head>
-        {/* 🛑 BLOQUEO DE FAVICON: Mata la petición automática del navegador para evitar el error 404 extra */}
         <link rel="icon" href="data:," />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen font-sans relative`}>
         
-        {/* SPINNER Y LISTENER: Envolvamos en Suspense para que no bloqueen la hidratación del 404 */}
         <Suspense fallback={null}>
           <GlobalSpinner />
           <RouteChangeListener />
@@ -60,14 +65,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Saltar al contenido principal
         </a>
 
-        {/* NAVBAR: Con su propio Suspense para carga asíncrona */}
         <Suspense fallback={<div className="h-16 w-full bg-[var(--background)] border-b border-[var(--border-theme)]" />}>
           <Navbar categories={categories} />
         </Suspense>
 
         <CartDrawer />
 
-        {/* CONTENEDOR PRINCIPAL: Usamos flex-1 para empujar el footer al fondo */}
         <main id="main-content" className="flex-1 w-full relative">
           {children}
         </main>

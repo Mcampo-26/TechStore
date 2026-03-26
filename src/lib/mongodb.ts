@@ -27,10 +27,15 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      // CONFIGURACIÓN DE ALTO RENDIMIENTO:
+      maxPoolSize: 10,       // Máximo de conexiones permitidas
+      minPoolSize: 5,        // MANTIENE 5 CONEXIONES SIEMPRE ABIERTAS (Evita el lag inicial)
+      connectTimeoutMS: 10000, // Tiempo máximo para conectar
+      socketTimeoutMS: 45000,  // Cierra sockets inactivos después de 45s
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log("✅ Conectado a MongoDB");
+      console.log("🚀 MongoDB: Conexión caliente y lista");
       return mongoose;
     });
   }
