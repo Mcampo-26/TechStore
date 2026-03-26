@@ -29,19 +29,18 @@ export const getProductsServer = unstable_cache(
 // 2. DETALLE DE UN PRODUCTO (Por ID)
 export async function getProductById(id: string) {
   try {
+    // Validar si el ID es un ObjectId válido de Mongo antes de conectar
+    // Esto evita viajes innecesarios a la DB si el ID está mal
+    if (id.length !== 24) return null; 
+
     await connectDB();
-    // .select() ayuda a traer solo lo que vas a mostrar, ignorando campos basura
-    const product = await Product.findById(id)
-      .select('name price description image image2 image3 category stock isOferta descuento')
-      .lean(); 
+    
+    // Agregamos un lean() para que la respuesta sea un objeto JS plano rápido
+    const product = await Product.findById(id).lean(); 
       
     if (!product) return null;
     
-    // Serialización manual rápida (evita el JSON.parse(JSON.stringify))
-    return {
-      ...product,
-      _id: product._id.toString(),
-    };
+    return JSON.parse(JSON.stringify(product));
   } catch (error) {
     console.error("Error obteniendo producto por ID:", error);
     return null;
