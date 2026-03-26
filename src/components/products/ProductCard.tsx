@@ -122,20 +122,35 @@ export const ProductCard = ({ product, showAddButton = false }: ProductCardProps
           </h3>
 
           <div className="mb-3">
-            {tieneDescuento && (
-              <p className="text-[12px] opacity-40 line-through font-medium" style={{ color: 'var(--foreground)' }}>
-                $ {precioOriginal.toLocaleString('es-AR')}
-              </p>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-black tracking-tight" style={{ color: 'var(--foreground)' }}>
-                $ {precioFinal.toLocaleString('es-AR')}
-              </span>
-            </div>
-            <p className="text-green-500 text-[11px] font-black uppercase mt-1 flex items-center gap-1">
-              <Zap size={12} fill="currentColor" /> Envío gratis
-            </p>
-          </div>
+  {tieneDescuento && (
+    <p className="text-[12px] opacity-40 line-through font-medium mb-0.5" style={{ color: 'var(--foreground)' }}>
+      $ {precioOriginal.toLocaleString('es-AR')}
+    </p>
+  )}
+
+  <div className="flex items-center justify-between gap-2 py-1">
+    <div className="flex flex-col">
+      <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Precio</span>
+      <span 
+        className="text-3xl font-black italic tracking-tighter leading-none" 
+        style={{ color: 'var(--foreground)' }}
+      >
+        ${precioFinal.toLocaleString('es-AR')}
+      </span>
+    </div>
+
+    {/* El botón circular con la flecha de tu imagen */}
+    {!showAddButton && (
+      <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors shadow-lg">
+        <ChevronRight size={20} className="-rotate-45" />
+      </div>
+    )}
+  </div>
+
+  <p className="text-green-500 text-[11px] font-black uppercase mt-1 flex items-center gap-1">
+    <Zap size={12} fill="currentColor" /> Envío gratis
+  </p>
+</div>
         </Link>
 
         {/* BOTONES */}

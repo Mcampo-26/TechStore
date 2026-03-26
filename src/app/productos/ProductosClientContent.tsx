@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { Product } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image"; // Cambiado a Next Image para mejor rendimiento
 import { useSearchParams, useRouter } from "next/navigation";
 import { SearchInput } from "@/components/layout/SearchInput";
 import { ChevronLeft, ArrowUpRight } from "lucide-react";
@@ -22,7 +23,6 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
   const query = searchParams.get('q')?.toLowerCase() || "";
 
   // --- 2. CÁLCULO SINCRÓNICO TOTAL ---
-  // Calculamos título y productos JUNTOS en el mismo ciclo de render
   const { title, filteredProducts } = useMemo(() => {
     const products = initialProducts.filter(product => {
       if (esOferta && !product.isOferta) return false;
@@ -42,8 +42,8 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
     <div className="min-h-screen max-w-7xl mx-auto px-4 pt-24 pb-20">
 
       {/* Botón Volver */}
-      <div className="h-10 mb-2">
-        <AnimatePresence>
+      <div className="h-10 mb-6">
+        <AnimatePresence mode="wait">
           {hayFiltroActivo && (
             <motion.button
               key="btn-back"
@@ -62,9 +62,6 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
         </AnimatePresence>
       </div>
 
-      {/* Contenedor Principal Animado por KEY */}
-      {/* El uso de key={title} asegura que cuando cambies de categoría en el Navbar, 
-          toda la sección se trate como una transición nueva y coordinada */}
       <motion.div
         key={title + esOferta}
         initial={{ opacity: 0 }}
@@ -72,7 +69,7 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
         transition={{ duration: 0.3 }}
       >
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
             <motion.h1
               layoutId="main-title"
@@ -80,92 +77,101 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
             >
               {title}
             </motion.h1>
-            <p className="text-sm font-bold opacity-40 mt-2 uppercase tracking-widest">
+            <p className="text-sm font-bold opacity-40 mt-2 uppercase tracking-widest text-[var(--foreground)]">
               {filteredProducts.length} Productos encontrados
             </p>
           </div>
           <div className="w-full md:w-80">
             <SearchInput />
           </div>
-        </div>
+        </header>
 
         {/* GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
-  <AnimatePresence mode="popLayout">
-    {filteredProducts.map((product) => (
-      <motion.div
-        layout
-        key={product._id}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="h-full w-full"
-      >
-        <Link
-          href={`/productos/${product._id}`}
-          style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }} // Truco para Safari iOS
-          className="group relative flex flex-col h-full bg-[var(--card-bg)] border border-[var(--border-theme)] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:shadow-2xl"
-        >
-          {/* CONTENEDOR DE IMAGEN: Reducido padding en móvil (p-8) */}
-          <div className="relative aspect-square w-full bg-neutral-500/5 dark:bg-white/5 flex items-center justify-center p-8 sm:p-12">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110"
-            />
-            
-            {/* ETIQUETA OFERTA: Posición corregida para que no flote en el medio */}
-            {product.isOferta && (
-              <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
-                <span className="inline-flex items-center justify-center backdrop-blur-md bg-blue-600/90 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1.5 rounded-full border border-white/10 shadow-lg shadow-blue-600/20">
-                  Oferta
-                </span>
-              </div>
-            )}
-          </div>
+          <AnimatePresence mode="popLayout">
+            {filteredProducts.map((product) => (
+              <motion.div
+                layout
+                key={product._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="h-full w-full"
+              >
+                <Link
+                  href={`/productos/${product._id}`}
+                  style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
+                  className="group relative flex flex-col h-full bg-[var(--card-bg)] border border-[var(--border-theme)] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:shadow-2xl hover:-translate-y-1"
+                >
+                  {/* CONTENEDOR DE IMAGEN */}
+                  <div className="relative aspect-square w-full bg-neutral-500/5 dark:bg-white/5 flex items-center justify-center p-8 sm:p-12">
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-contain p-8 sm:p-12 transition-transform duration-700 group-hover:scale-110"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    />
+                    
+                    {product.isOferta && (
+                      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
+                        <span className="inline-flex items-center justify-center backdrop-blur-md bg-blue-600/90 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1.5 rounded-full border border-white/10 shadow-lg shadow-blue-600/20">
+                          Oferta
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
-          {/* CONTENIDO: p-6 en móvil para ganar espacio */}
-          <div className="p-6 sm:p-8 flex flex-grow flex-col min-w-0">
-            <p className="text-[10px] font-black opacity-30 uppercase mb-1 tracking-widest">
-              {product.category}
-            </p>
-            
-            {/* TÍTULO: text-lg en móvil + break-words para evitar cortes */}
-            <h3 className="text-lg sm:text-xl font-bold leading-tight group-hover:text-blue-600 transition-colors break-words">
-              {product.name}
-            </h3>
-            
-            {/* FOOTER DE CARD */}
-            <div className="mt-auto pt-6 flex justify-between items-end border-t border-[var(--border-theme)]/50">
-              <div className="min-w-0">
-                <span className="text-[9px] font-bold opacity-30 uppercase block">Precio</span>
-                <p className="text-2xl sm:text-3xl font-black italic tracking-tighter truncate">
-                  ${Number(product.price).toLocaleString('es-AR')}
-                </p>
-              </div>
-              
-              {/* BOTÓN ICONO: Más pequeño en móvil */}
-              <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[var(--border-theme)] flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all ml-2">
-                <ArrowUpRight size={18} />
-              </div>
-            </div>
-          </div>
-        </Link>
-      </motion.div>
-    ))}
-  </AnimatePresence>
-</div>
+                  {/* CONTENIDO */}
+                  <div className="p-6 sm:p-8 flex flex-grow flex-col min-w-0">
+                    <p className="text-[10px] font-black opacity-30 uppercase mb-1 tracking-widest text-[var(--foreground)]">
+                      {product.category}
+                    </p>
+                    
+                    <h3 className="text-lg sm:text-xl font-bold leading-tight group-hover:text-blue-600 transition-colors break-words text-[var(--foreground)]">
+                      {product.name}
+                    </h3>
+                    
+                    {/* FOOTER DE CARD */}
+                    <div className="mt-auto pt-6 flex justify-between items-end border-t border-[var(--border-theme)]/50">
+                      <div className="min-w-0 py-1">
+                        <span className="text-[9px] font-bold opacity-30 uppercase block leading-none mb-1 text-[var(--foreground)]">
+                          Precio
+                        </span>
+                        <p className="text-2xl sm:text-3xl font-black italic tracking-tighter leading-none whitespace-nowrap text-[var(--foreground)]">
+                          ${Number(product.price).toLocaleString('es-AR')}
+                        </p>
+                      </div>
+                      
+                      {/* BOTÓN ICONO */}
+                      <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[var(--border-theme)] flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all ml-2 text-[var(--foreground)]">
+                        <ArrowUpRight size={18} />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       </motion.div>
 
       {/* ESTADO VACÍO */}
       {filteredProducts.length === 0 && (
-        <div className="py-20 text-center border-2 border-dashed border-[var(--border-theme)] rounded-[3rem]">
-          <h3 className="text-2xl font-black uppercase italic">Sin resultados</h3>
-          <button onClick={() => router.push('/productos')} className="mt-6 px-8 py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="py-20 text-center border-2 border-dashed border-[var(--border-theme)] rounded-[3rem]"
+        >
+          <h3 className="text-2xl font-black uppercase italic opacity-20 text-[var(--foreground)]">Sin resultados</h3>
+          <button 
+            onClick={() => router.push('/productos')} 
+            className="mt-6 px-8 py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+          >
             Limpiar Filtros
           </button>
-        </div>
+        </motion.div>
       )}
     </div>
   );
