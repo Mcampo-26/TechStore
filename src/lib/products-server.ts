@@ -30,7 +30,8 @@ export const getProductsServer = unstable_cache(
     try {
       await connectDB();
       const products = await Product.find({})
-        .select('name price image image2 image3 category stock isOferta descuento slug') 
+        // AGREGA 'description' AQUÍ:
+        .select('name price image image2 image3 category stock isOferta descuento slug description') 
         .sort({ createdAt: -1 })
         .lean();
 
