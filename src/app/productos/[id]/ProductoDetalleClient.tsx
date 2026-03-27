@@ -180,6 +180,7 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
                 fill 
                 priority 
                 quality={100}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
                 onLoad={() => setIsImageLoading(false)}
                 className={`object-contain p-8 sm:p-12 transition-all duration-700 ${
                   isImageLoading ? 'opacity-0 scale-95 blur-2xl' : 
@@ -222,7 +223,14 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
                   }`}
                 >
                   <div className="relative w-full h-full">
-                      <Image src={img} alt={`miniatura-${i+1}`} fill quality={60} className="object-contain" />
+                      <Image 
+                        src={img} 
+                        alt={`miniatura-${i+1}`} 
+                        fill 
+                        quality={60} 
+                        sizes="100px"
+                        className="object-contain" 
+                      />
                   </div>
                 </button>
               ))}

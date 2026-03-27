@@ -20,6 +20,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono", 
   subsets: ["latin"],
   display: "swap",
+  preload: false, // Desactivamos la precarga para evitar el aviso si no se usa de inmediato
 });
 
 export const metadata: Metadata = {
@@ -41,20 +42,18 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   
-  // 2. CALENTAMIENTO DE CONEXIÓN (WARM-UP)
-  // Lo disparamos sin 'await' para que no frene el renderizado, 
-  // pero que empiece a abrir las 5 conexiones del pool en segundo plano.
   dbConnect().catch((err) => console.error("MongoDB Warmup Error:", err));
 
-  // Fetch de categorías en el servidor (esto también usará la conexión abierta arriba)
   const categories = await getCategoriesServer();
 
   return (
-    <html lang="es" className="scroll-smooth" suppressHydrationWarning>
+    // CAMBIO: Usamos data-scroll-behavior para que Next.js gestione el scroll correctamente
+    <html lang="es" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <link rel="icon" href="data:," />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen font-sans relative`}>
+      {/* CAMBIO: Añadimos geistSans.className para usar la fuente y eliminar avisos de precarga */}
+      <body className={`${geistSans.variable} ${geistMono.variable} ${geistSans.className} antialiased flex flex-col min-h-screen font-sans relative`}>
         
         <Suspense fallback={null}>
           <GlobalSpinner />

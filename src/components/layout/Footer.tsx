@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Laptop, Github, Instagram, Facebook, MessageCircle } from 'lucide-react';
 import { useProductStore } from "@/store/useProductStore";
 
+
+
 export const Footer = () => {
   const setLoading = useProductStore((state) => state.setLoading);
 
@@ -38,19 +40,46 @@ export const Footer = () => {
             </p>
             
             <div className="flex gap-4">
-              <a href="#" className="opacity-60 hover:opacity-100 hover:text-[#1877F2] transition-all transform hover:-translate-y-1">
-                <Facebook size={20} />
-              </a>
-              <a href="#" className="opacity-60 hover:opacity-100 hover:text-[#E4405F] transition-all transform hover:-translate-y-1">
-                <Instagram size={20} />
-              </a>
-              <a href="#" className="opacity-60 hover:opacity-100 hover:text-white transition-all transform hover:-translate-y-1">
-                <Github size={20} />
-              </a>
-              <a href="#" className="opacity-60 hover:opacity-100 hover:text-[#25D366] transition-all transform hover:-translate-y-1">
-                <MessageCircle size={20} />
-              </a>
-            </div>
+  {/* Facebook */}
+  <a 
+    href="https://facebook.com/tucuenta" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="opacity-60 hover:opacity-100 hover:text-[#1877F2] transition-all transform hover:-translate-y-1"
+  >
+    <Facebook size={20} />
+  </a>
+
+  {/* Instagram */}
+  <a 
+    href="https://instagram.com/tucuenta" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="opacity-60 hover:opacity-100 hover:text-[#E4405F] transition-all transform hover:-translate-y-1"
+  >
+    <Instagram size={20} />
+  </a>
+
+  {/* Github */}
+  <a 
+    href="https://github.com/tuusuario" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="opacity-60 hover:opacity-100 hover:text-[#333] dark:hover:text-white transition-all transform hover:-translate-y-1"
+  >
+    <Github size={20} />
+  </a>
+
+  {/* WhatsApp (usando MessageCircle como icono de chat) */}
+  <a 
+    href="https://wa.me/tunumerotelefono" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="opacity-60 hover:opacity-100 hover:text-[#25D366] transition-all transform hover:-translate-y-1"
+  >
+    <MessageCircle size={20} />
+  </a>
+</div>
           </div>
 
           {/* COLUMNA 2: NAVEGACIÓN */}
