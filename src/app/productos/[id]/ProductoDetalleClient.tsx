@@ -143,7 +143,7 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className="max-w-7xl mx-auto px-4 sm:px-6 w-full pt-12 pb-12"
       >
-        {/* BOTÓN VOLVER - Más compacto para ganar espacio */}
+        {/* BOTÓN VOLVER */}
         <div className="h-6 mb-4">
           <button
             onClick={volverAlCatalogo} 
@@ -154,7 +154,7 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
           </button>
         </div>
   
-        {/* CONTENEDOR PRINCIPAL CON ALTURA CONTROLADA */}
+        {/* CONTENEDOR PRINCIPAL */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:h-[75vh] items-center">
           
           {/* GALERÍA (IZQUIERDA) */}
@@ -174,14 +174,19 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
                 fill 
                 priority 
                 quality={100}
-                className={`object-contain p-8 transition-all duration-700 ${
-                  isImageLoading ? 'opacity-0 scale-95 blur-2xl' : 
+                onLoad={() => setIsImageLoading(false)} // CRÍTICO: Esto debe ejecutarse
+                className={`object-contain p-8 transition-all duration-500 ${
+                  isImageLoading ? 'opacity-0 scale-95' : 
                   (isHovering && isUnlockedForever ? 'opacity-0 scale-110' : 'opacity-100 scale-100')
                 }`}
               />
+              
+              {/* ZOOM OVERLAY */}
               {isUnlockedForever && isHovering && (
                 <div className="absolute inset-0 pointer-events-none z-10" style={zoomStyle} />
               )}
+  
+              {/* BADGE OFERTA */}
               {esOferta && (
                 <div className="absolute top-6 left-6 z-20 bg-blue-600 text-white px-3 py-1 rounded-full font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-lg border border-white/10">
                   <Zap size={12} fill="currentColor" /> -{descuentoNum}% OFF
@@ -189,14 +194,14 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
               )}
             </div>
   
-            {/* MINIATURAS (BAJO LA IMAGEN) */}
+            {/* MINIATURAS */}
             <div className="flex gap-3 mt-4 overflow-x-auto pb-2 scrollbar-hide">
               {allImages.map((img, i) => (
                 <button
                   key={i} 
                   onClick={() => { setMainImage(img); setZoomStyle({ display: 'none' }); }}
                   className={`relative w-16 h-16 rounded-xl overflow-hidden bg-white dark:bg-neutral-800 border transition-all duration-300 p-2 shrink-0 ${
-                    mainImage === img ? 'border-blue-600 ring-2 ring-blue-600/20' : 'opacity-30 border-white/5'
+                    mainImage === img ? 'border-blue-600 ring-2 ring-blue-600/20' : 'opacity-40 border-white/5 hover:opacity-100'
                   }`}
                 >
                   <Image src={img} alt="min" fill className="object-contain p-1" />
@@ -205,35 +210,35 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
             </div>
           </div>
   
-          {/* INFORMACIÓN (DERECHA) - Con scroll interno si es necesario */}
+          {/* INFORMACIÓN (DERECHA) */}
           <div className="lg:col-span-5 flex flex-col justify-between h-full py-4 overflow-y-auto pr-2 custom-scrollbar">
               <div>
                 <header className="space-y-2 mb-4">
                     <p className="text-[9px] font-black uppercase tracking-[0.4em] text-blue-500">{product.category || "Hardware"}</p>
-                    <h1 className="text-3xl xl:text-4xl font-black tracking-tighter leading-none uppercase">
+                    <h1 className="text-3xl xl:text-4xl font-black tracking-tighter leading-none uppercase text-[var(--foreground)]">
                       {product.name}
                     </h1>
                     <div className="flex items-center gap-1 text-amber-500 pt-1">
                       {[...Array(5)].map((_, i) => <Star key={i} size={10} fill="currentColor" />)}
-                      <span className="ml-2 text-[8px] font-black tracking-widest uppercase opacity-30 italic">Original Product</span>
+                      <span className="ml-2 text-[8px] font-black tracking-widest uppercase opacity-30 italic text-[var(--foreground)]">Original Product</span>
                     </div>
                 </header>
   
-                <div className="py-4 border-y border-white/5 mb-4">
+                <div className="py-4 border-y border-[var(--border-theme)]/60 mb-4">
                   <div className="flex items-baseline gap-4">
-                    <p className="text-5xl font-black tracking-tighter">
+                    <p className="text-5xl font-black tracking-tighter text-[var(--foreground)]">
                       <span className="text-blue-600 text-xl mr-1">$</span>
                       {precioFinal.toLocaleString('es-AR')}
                     </p>
                     {esOferta && (
-                      <p className="text-lg font-bold text-white/20 line-through tracking-tighter">
+                      <p className="text-lg font-bold text-red-500/40 line-through tracking-tighter">
                         ${precioOriginal.toLocaleString('es-AR')}
                       </p>
                     )}
                   </div>
                 </div>
   
-                <p className="text-[11px] text-white/40 leading-relaxed font-medium uppercase tracking-wider mb-6 line-clamp-4 hover:line-clamp-none transition-all">
+                <p className="text-[11px] text-[var(--foreground)]/40 leading-relaxed font-medium uppercase tracking-wider mb-6 line-clamp-4 hover:line-clamp-none transition-all cursor-default">
                   {product.description}
                 </p>
               </div>
@@ -243,29 +248,29 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
                   <button 
                     onClick={handleBuyNow} 
                     disabled={!hasStock || !user} 
-                    className="w-full h-14 rounded-xl font-black text-[10px] uppercase tracking-[0.3em] transition-all bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-[0.98]"
+                    className="w-full h-14 rounded-xl font-black text-[10px] uppercase tracking-[0.3em] transition-all bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-[0.98] disabled:opacity-50"
                   >
-                    Comprar Ahora
+                    {isBuyingNow ? "Procesando..." : "Comprar Ahora"}
                   </button>
                   <button 
                     onClick={handleAddToCart} 
                     disabled={!hasStock || !user} 
-                    className="w-full h-14 rounded-xl font-black text-[10px] uppercase tracking-[0.3em] transition-all border border-white/10 hover:bg-white hover:text-black flex items-center justify-center gap-3"
+                    className="w-full h-14 rounded-xl font-black text-[10px] uppercase tracking-[0.3em] transition-all border border-[var(--border-theme)] hover:bg-[var(--foreground)] hover:text-[var(--background)] flex items-center justify-center gap-3 disabled:opacity-50"
                   >
                     <ShoppingCart size={16} />
                     Añadir al Carrito
                   </button>
                 </div>
   
-                {/* CARACTERÍSTICAS (PARTE INFERIOR DESPEGADA) */}
+                {/* CARACTERÍSTICAS */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-500/5 border border-[var(--border-theme)]/50">
                     <Truck size={16} className="text-blue-500" />
-                    <span className="text-[8px] font-black uppercase opacity-50 tracking-tighter">Envío Gratis</span>
+                    <span className="text-[8px] font-black uppercase opacity-50 tracking-tighter text-[var(--foreground)]">Envío Gratis</span>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-500/5 border border-[var(--border-theme)]/50">
                     <ShieldCheck size={16} className="text-emerald-500" />
-                    <span className="text-[8px] font-black uppercase opacity-50 tracking-tighter">Garantía Oficial</span>
+                    <span className="text-[8px] font-black uppercase opacity-50 tracking-tighter text-[var(--foreground)]">Garantía Oficial</span>
                   </div>
                 </div>
               </div>
