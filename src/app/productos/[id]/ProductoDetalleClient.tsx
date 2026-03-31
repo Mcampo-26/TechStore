@@ -133,7 +133,7 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
   };
 
   return (
-    <div className={`transition-opacity duration-500 ${isReady ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`transition-opacity duration-500 ${isReady ? 'opacity-100' : 'opacity-0'} min-h-[90vh] flex flex-col justify-center`}>
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
         animate={{ 
@@ -141,36 +141,30 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
           y: isExiting ? -10 : 0
         }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-24"
+        className="max-w-7xl mx-auto px-4 sm:px-6 w-full pt-12 pb-12"
       >
-        {/* BOTÓN VOLVER CON ANIMATE PRESENCE */}
-        <div className="h-12 mb-8">
-          <AnimatePresence mode="wait">
-            <motion.button
-              key={hayFiltroActivo ? "filtrado" : "normal"}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              onClick={volverAlCatalogo} 
-              className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400"
-            >
-              <div className="p-2 rounded-full border border-blue-600/20 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                <ChevronLeft size={14} />
-              </div>
-              <span>{hayFiltroActivo ? "Ver Catálogo Completo" : "Volver al Catálogo"}</span>
-            </motion.button>
-          </AnimatePresence>
+        {/* BOTÓN VOLVER - Más compacto para ganar espacio */}
+        <div className="h-6 mb-4">
+          <button
+            onClick={volverAlCatalogo} 
+            className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-600/60 hover:text-blue-600 transition-all"
+          >
+            <ChevronLeft size={14} />
+            <span>Volver</span>
+          </button>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-          {/* GALERÍA */}
-          <div className="lg:col-span-7 space-y-6">
+  
+        {/* CONTENEDOR PRINCIPAL CON ALTURA CONTROLADA */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:h-[75vh] items-center">
+          
+          {/* GALERÍA (IZQUIERDA) */}
+          <div className="lg:col-span-7 flex flex-col justify-center h-full">
             <div
               ref={containerRef}
               onClick={() => { if (!isUnlockedForever) setIsUnlockedForever(true); setIsHovering(true); }}
               onMouseMove={handleMouseMove}
               onMouseLeave={() => { setIsHovering(false); setZoomStyle({ display: 'none' }); }}
-              className={`relative aspect-square rounded-[2.5rem] sm:rounded-[3rem] overflow-hidden bg-white dark:bg-neutral-900/30 border border-[var(--border-theme)] shadow-2xl group transition-all duration-300 ${
+              className={`relative aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-white dark:bg-neutral-900/30 border border-[var(--border-theme)] shadow-2xl group transition-all duration-300 ${
                 isUnlockedForever ? 'cursor-crosshair' : 'cursor-zoom-in'
               }`}
             >
@@ -180,140 +174,99 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
                 fill 
                 priority 
                 quality={100}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
-                onLoad={() => setIsImageLoading(false)}
-                className={`object-contain p-8 sm:p-12 transition-all duration-700 ${
+                className={`object-contain p-8 transition-all duration-700 ${
                   isImageLoading ? 'opacity-0 scale-95 blur-2xl' : 
                   (isHovering && isUnlockedForever ? 'opacity-0 scale-110' : 'opacity-100 scale-100')
                 }`}
               />
-
               {isUnlockedForever && isHovering && (
-                <div
-                  className="absolute inset-0 pointer-events-none bg-no-repeat z-10"
-                  style={zoomStyle}
-                />
+                <div className="absolute inset-0 pointer-events-none z-10" style={zoomStyle} />
               )}
-
-              {!isUnlockedForever && (
-                <div className="absolute inset-0 bg-black/5 dark:bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                   <div className="bg-black/60 backdrop-blur-md text-white px-5 py-3 rounded-full flex items-center gap-3 shadow-2xl">
-                      <ZoomIn size={18} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Click para inspeccionar</span>
-                   </div>
-                </div>
-              )}
-
               {esOferta && (
-                <div className="absolute top-8 left-8 z-20 bg-blue-600 text-white px-4 py-1.5 rounded-full font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-lg border border-white/10">
-                  <Zap size={14} fill="currentColor" className="animate-pulse" /> -{descuentoNum}% OFF
+                <div className="absolute top-6 left-6 z-20 bg-blue-600 text-white px-3 py-1 rounded-full font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-lg border border-white/10">
+                  <Zap size={12} fill="currentColor" /> -{descuentoNum}% OFF
                 </div>
               )}
             </div>
-
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+  
+            {/* MINIATURAS (BAJO LA IMAGEN) */}
+            <div className="flex gap-3 mt-4 overflow-x-auto pb-2 scrollbar-hide">
               {allImages.map((img, i) => (
                 <button
                   key={i} 
                   onClick={() => { setMainImage(img); setZoomStyle({ display: 'none' }); }}
-                  className={`relative w-20 h-24 sm:w-24 sm:h-28 rounded-[2rem] overflow-hidden bg-white dark:bg-neutral-800 border transition-all duration-500 p-3 shrink-0 flex items-center justify-center ${
-                    mainImage === img 
-                      ? 'border-blue-600 ring-4 ring-blue-600/15' 
-                      : 'opacity-40 hover:opacity-100 border-[var(--border-theme)]'
+                  className={`relative w-16 h-16 rounded-xl overflow-hidden bg-white dark:bg-neutral-800 border transition-all duration-300 p-2 shrink-0 ${
+                    mainImage === img ? 'border-blue-600 ring-2 ring-blue-600/20' : 'opacity-30 border-white/5'
                   }`}
                 >
-                  <div className="relative w-full h-full">
-                      <Image 
-                        src={img} 
-                        alt={`miniatura-${i+1}`} 
-                        fill 
-                        quality={60} 
-                        sizes="100px"
-                        className="object-contain" 
-                      />
-                  </div>
+                  <Image src={img} alt="min" fill className="object-contain p-1" />
                 </button>
               ))}
             </div>
           </div>
-
-          {/* INFORMACIÓN */}
-          <div className="lg:col-span-5 flex flex-col gap-8 lg:sticky lg:top-32 pt-2">
-              <header className="space-y-4">
-                  <div className="flex items-center gap-3 opacity-60">
-                      <span className="h-[1px] w-8 bg-blue-600"></span>
-                      <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-[var(--foreground)]">{product.category || "Hardware"}</p>
-                  </div>
-                  <h1 className="text-4xl lg:text-5xl font-black text-[var(--foreground)] tracking-tighter leading-[1] uppercase break-words">
-                    {product.name}
-                  </h1>
-                  <div className="flex items-center gap-1 text-amber-500 pt-1">
-                    {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
-                    <span className="ml-2 text-[10px] font-black tracking-widest uppercase italic opacity-40">Original Philco Product</span>
-                  </div>
-              </header>
-
-              <div className="py-8 border-y border-[var(--border-theme)]/60">
-                <div className="flex items-baseline gap-4">
-                  <p className="text-6xl sm:text-7xl font-black text-[var(--foreground)] tracking-tighter leading-none">
-                    <span className="text-blue-600 text-3xl mr-1">$</span>
-                    {precioFinal.toLocaleString('es-AR')}
-                  </p>
-                  {esOferta && (
-                    <p className="text-xl sm:text-2xl font-bold text-red-500/40 line-through tracking-tighter">
-                      ${precioOriginal.toLocaleString('es-AR')}
+  
+          {/* INFORMACIÓN (DERECHA) - Con scroll interno si es necesario */}
+          <div className="lg:col-span-5 flex flex-col justify-between h-full py-4 overflow-y-auto pr-2 custom-scrollbar">
+              <div>
+                <header className="space-y-2 mb-4">
+                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-blue-500">{product.category || "Hardware"}</p>
+                    <h1 className="text-3xl xl:text-4xl font-black tracking-tighter leading-none uppercase">
+                      {product.name}
+                    </h1>
+                    <div className="flex items-center gap-1 text-amber-500 pt-1">
+                      {[...Array(5)].map((_, i) => <Star key={i} size={10} fill="currentColor" />)}
+                      <span className="ml-2 text-[8px] font-black tracking-widest uppercase opacity-30 italic">Original Product</span>
+                    </div>
+                </header>
+  
+                <div className="py-4 border-y border-white/5 mb-4">
+                  <div className="flex items-baseline gap-4">
+                    <p className="text-5xl font-black tracking-tighter">
+                      <span className="text-blue-600 text-xl mr-1">$</span>
+                      {precioFinal.toLocaleString('es-AR')}
                     </p>
-                  )}
+                    {esOferta && (
+                      <p className="text-lg font-bold text-white/20 line-through tracking-tighter">
+                        ${precioOriginal.toLocaleString('es-AR')}
+                      </p>
+                    )}
+                  </div>
                 </div>
+  
+                <p className="text-[11px] text-white/40 leading-relaxed font-medium uppercase tracking-wider mb-6 line-clamp-4 hover:line-clamp-none transition-all">
+                  {product.description}
+                </p>
               </div>
-
-              <p className="text-[var(--foreground)] opacity-60 leading-relaxed text-base sm:text-lg italic font-medium">
-                {product.description}
-              </p>
-
-              <div className="space-y-4 pt-4">
-                <button 
-                  onClick={handleBuyNow} 
-                  disabled={!hasStock || !user} 
-                  className={`w-full h-20 rounded-full font-black text-[11px] uppercase tracking-[0.4em] transition-all border-2 shadow-2xl hover:scale-[1.02] active:scale-[0.98] ${
-                    (hasStock && user)
-                      ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-blue-600/30' 
-                      : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-500 border-neutral-300 dark:border-neutral-800 cursor-not-allowed opacity-70'
-                  }`}
-                >
-                  {!user ? "Ingresa para comprar" : isBuyingNow ? "Iniciando Checkout..." : "Comprar Ahora"}
-                </button>
-                
-                <button 
-                  onClick={handleAddToCart} 
-                  disabled={!hasStock || !user} 
-                  className={`w-full h-20 rounded-full font-black text-[11px] uppercase tracking-[0.4em] transition-all border-2 ${
-                    (hasStock && user)
-                      ? 'border-[var(--border-theme)]/80 hover:bg-[var(--foreground)] hover:text-[var(--background)]'
-                      : 'border-neutral-300 dark:border-neutral-800 text-neutral-400 cursor-not-allowed opacity-50'
-                  }`}
-                >
-                  <span className="flex items-center justify-center gap-3">
-                    <ShoppingCart size={20} />
-                    {!user ? "Debes iniciar sesión" : "Añadir al Carrito"}
-                  </span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-                <div className="flex items-center gap-5 p-6 rounded-[2.3rem] bg-neutral-500/5 dark:bg-white/5 border border-[var(--border-theme)]/50">
-                    <div className="p-3 bg-blue-600/10 rounded-2xl"><Truck size={22} className="text-blue-600" /></div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase text-[var(--foreground)]">Envío Express</p>
-                      <p className="text-[9px] opacity-40 uppercase font-bold text-[var(--foreground)]">Todo el País</p>
-                    </div>
+  
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <button 
+                    onClick={handleBuyNow} 
+                    disabled={!hasStock || !user} 
+                    className="w-full h-14 rounded-xl font-black text-[10px] uppercase tracking-[0.3em] transition-all bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 active:scale-[0.98]"
+                  >
+                    Comprar Ahora
+                  </button>
+                  <button 
+                    onClick={handleAddToCart} 
+                    disabled={!hasStock || !user} 
+                    className="w-full h-14 rounded-xl font-black text-[10px] uppercase tracking-[0.3em] transition-all border border-white/10 hover:bg-white hover:text-black flex items-center justify-center gap-3"
+                  >
+                    <ShoppingCart size={16} />
+                    Añadir al Carrito
+                  </button>
                 </div>
-                <div className="flex items-center gap-5 p-6 rounded-[2.3rem] bg-neutral-500/5 dark:bg-white/5 border border-[var(--border-theme)]/50">
-                    <div className="p-3 bg-emerald-500/10 rounded-2xl"><ShieldCheck size={22} className="text-emerald-500" /></div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase text-[var(--foreground)]">Garantía</p>
-                      <p className="text-[9px] opacity-40 uppercase font-bold text-[var(--foreground)]">Oficial Philco</p>
-                    </div>
+  
+                {/* CARACTERÍSTICAS (PARTE INFERIOR DESPEGADA) */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <Truck size={16} className="text-blue-500" />
+                    <span className="text-[8px] font-black uppercase opacity-50 tracking-tighter">Envío Gratis</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <ShieldCheck size={16} className="text-emerald-500" />
+                    <span className="text-[8px] font-black uppercase opacity-50 tracking-tighter">Garantía Oficial</span>
+                  </div>
                 </div>
               </div>
           </div>

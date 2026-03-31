@@ -81,7 +81,7 @@ export default function LoginPage() {
                 
                 <motion.p variants={itemVariants} className="text-xs font-bold opacity-50 mt-1 uppercase tracking-wider" 
                    style={{ color: 'var(--foreground)' }}>
-                  Tu setup tech te está esperando.
+                  Tu cuenta te está esperando.
                 </motion.p>
               </motion.div>
 
