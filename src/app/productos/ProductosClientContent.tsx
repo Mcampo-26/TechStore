@@ -25,9 +25,16 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
   // --- 2. CÁLCULO SINCRÓNICO TOTAL ---
   const { title, filteredProducts } = useMemo(() => {
     const products = initialProducts.filter(product => {
+      // 1. Filtro de Ofertas: Si la URL dice oferta=true, solo mostrar productos con isOferta
       if (esOferta && !product.isOferta) return false;
-      if (categoriaURL !== "Todas" && !esOferta && product.category !== categoriaURL) return false;
+
+      // 2. Filtro de Categoría: Solo filtrar por categoría si NO estamos en la sección global de Ofertas
+      // (O si quieres filtrar categorías DENTRO de ofertas, quita el !esOferta)
+      if (categoriaURL !== "Todas" && product.category !== categoriaURL) return false;
+
+      // 3. Filtro de Búsqueda (Lupa): Siempre debe actuar sobre el resultado anterior
       if (query && !product.name.toLowerCase().includes(query)) return false;
+
       return true;
     });
 
@@ -35,7 +42,6 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
 
     return { title: displayTitle, filteredProducts: products };
   }, [initialProducts, categoriaURL, esOferta, query]);
-
   const hayFiltroActivo = categoriaURL !== "Todas" || esOferta || query !== "";
 
   return (

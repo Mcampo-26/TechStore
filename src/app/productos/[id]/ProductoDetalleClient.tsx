@@ -174,19 +174,17 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
                 fill 
                 priority 
                 quality={100}
-                onLoad={() => setIsImageLoading(false)} // CRÍTICO: Esto debe ejecutarse
+                onLoad={() => setIsImageLoading(false)}
                 className={`object-contain p-8 transition-all duration-500 ${
                   isImageLoading ? 'opacity-0 scale-95' : 
                   (isHovering && isUnlockedForever ? 'opacity-0 scale-110' : 'opacity-100 scale-100')
                 }`}
               />
               
-              {/* ZOOM OVERLAY */}
               {isUnlockedForever && isHovering && (
                 <div className="absolute inset-0 pointer-events-none z-10" style={zoomStyle} />
               )}
   
-              {/* BADGE OFERTA */}
               {esOferta && (
                 <div className="absolute top-6 left-6 z-20 bg-blue-600 text-white px-3 py-1 rounded-full font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-lg border border-white/10">
                   <Zap size={12} fill="currentColor" /> -{descuentoNum}% OFF
@@ -238,7 +236,8 @@ export default function ProductoDetalleClient({ product }: ProductoDetalleClient
                   </div>
                 </div>
   
-                <p className="text-[11px] text-[var(--foreground)]/40 leading-relaxed font-medium uppercase tracking-wider mb-6 line-clamp-4 hover:line-clamp-none transition-all cursor-default">
+                {/* DESCRIPCIÓN CORREGIDA: Sin cortes, sin hover oculto */}
+                <p className="text-[11px] text-[var(--foreground)]/40 leading-relaxed font-medium uppercase tracking-wider mb-8">
                   {product.description}
                 </p>
               </div>
