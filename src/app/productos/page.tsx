@@ -28,7 +28,7 @@ export default async function Page() {
           <h2 className="text-xl font-bold text-red-500 mb-2">Error de Conexión</h2>
           <p className="opacity-50 text-sm uppercase tracking-widest">{error}</p>
           <button 
-            onClick={() => { if(typeof window !== 'undefined') window.location.reload() }}
+           
             className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest"
           >
             Reintentar

@@ -24,7 +24,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const cart = useCartStore((state) => state.cart);
   const { isLoggedIn, logout, user } = useAuthStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
+  const clearFilters = useProductStore((state) => state.clearFilters);
   const filterByCategory = useProductStore((state) => state.filterByCategory);
   const filterByOffers = useProductStore((state) => state.filterByOffers);
 
@@ -46,6 +46,18 @@ export const Navbar = ({ categories }: NavbarProps) => {
     }
   }, []);
 
+
+  const handleGoHome = () => {
+    // 1. Limpiamos TODO el estado de filtros en el Store
+    clearFilters();
+
+    // 2. Cerramos menús móviles
+    setIsMobileMenuOpen(false);
+
+    // 3. Navegamos a la raíz
+    router.push('/');
+  };
+
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
@@ -56,43 +68,20 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
   const handleCategoryAction = (categoryName: string) => {
-    // 1. Obtenemos la categoría que ya está activa en el Store
-    const activeCategory = useProductStore.getState().activeCategory;
-
-    // 2. Si el usuario cliquea la misma categoría, solo cerramos menús y salimos
-    if (activeCategory === categoryName) {
-      setIsMobileMenuOpen(false);
-      setIsDropdownOpen(false);
-      return; 
-    }
-
-    // 3. Si es una categoría DISTINTA, procedemos con la navegación y el spinner
     setIsMobileMenuOpen(false);
     setIsDropdownOpen(false);
-
+  
+    // SOLO navegamos. No llamamos a filterByCategory aquí.
     router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
-
-    setTimeout(() => {
-      useProductStore.getState().filterByCategory(categoryName);
-    }, 150); 
   };
-
+  
   const handleOffersAction = () => {
-    const activeCategory = useProductStore.getState().activeCategory;
-
-    // Si ya estamos en Ofertas, no hacemos nada
-    if (activeCategory === "Ofertas") {
-      setIsMobileMenuOpen(false);
-      return;
-    }
-
     setIsMobileMenuOpen(false);
+    // SOLO navegamos. No llamamos a filterByOffers aquí.
     router.push(`/productos?oferta=true`);
-
-    setTimeout(() => {
-      useProductStore.getState().filterByOffers();
-    }, 150);
   };
+
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
     setIsMobileMenuOpen(false);
@@ -105,7 +94,7 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
   return (
     <>
-     
+
       <AnimatePresence>
         {isLoggingOut && <TechLoader mode="logout" />}
       </AnimatePresence>
@@ -121,14 +110,20 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
           {/* IZQUIERDA: LOGO + SALUDO DINÁMICO */}
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2 group shrink-0">
-              <div className="bg-blue-600 text-white p-2 rounded-xl shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
-                <Laptop size={22} />
-              </div>
-              <span className="text-lg font-black tracking-tighter hidden sm:block uppercase" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
-                TECH<span className="text-blue-600">STORE</span>
-              </span>
-            </Link>
+          <button 
+  onClick={handleGoHome} 
+  className="flex items-center gap-2 group shrink-0 focus:outline-none"
+>
+  <div className="bg-blue-600 text-white p-2 rounded-xl shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
+    <Laptop size={22} />
+  </div>
+  <span 
+    className="text-lg font-black tracking-tighter hidden sm:block uppercase" 
+    style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
+  >
+    TECH<span className="text-blue-600">STORE</span>
+  </span>
+</button>
 
             {/* RECUPERADO: Saludo de Bienvenida Desktop */}
             {mounted && isLoggedIn && (
@@ -142,7 +137,15 @@ export const Navbar = ({ categories }: NavbarProps) => {
           {/* CENTRO: NAVEGACIÓN DESKTOP */}
           <div className="flex items-center">
             <ul className="hidden md:flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
-              <li><Link href="/" className="hover:text-blue-600 transition-colors" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>Inicio</Link></li>
+            <li>
+                <button 
+                  onClick={handleGoHome} 
+                  className="hover:text-blue-600 transition-colors" 
+                  style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
+                >
+                  Inicio
+                </button>
+              </li>
 
               {/* DROPDOWN CATEGORÍAS */}
               <li
@@ -158,8 +161,8 @@ export const Navbar = ({ categories }: NavbarProps) => {
                 </button>
 
                 <div className={`absolute top-[70px] left-0 w-56 rounded-2xl border shadow-2xl transition-all duration-300 origin-top-left z-[50] ${isDropdownOpen
-                    ? 'opacity-100 scale-100 translate-y-0 visible'
-                    : 'opacity-0 scale-95 -translate-y-2 invisible'
+                  ? 'opacity-100 scale-100 translate-y-0 visible'
+                  : 'opacity-0 scale-95 -translate-y-2 invisible'
                   }`}
                   style={{
                     backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
@@ -185,53 +188,50 @@ export const Navbar = ({ categories }: NavbarProps) => {
               {/* BOTÓN OFERTAS */}
               {/* BOTÓN OFERTAS DESKTOP */}
               <li>
-  <button
-    onClick={handleOffersAction}
-    className={`group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl transition-all duration-500 overflow-hidden border-2 ${
-      isOffersActive
-        ? 'bg-orange-600 shadow-[0_0_25px_rgba(249,115,22,0.6)] border-orange-400'
-        : isDarkMode 
-          ? 'bg-slate-900 border-orange-500/40 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)]' 
-          : 'bg-orange-50 border-orange-200 hover:border-orange-500 shadow-sm'
-    }`}
-  >
-    {/* EFECTO DE FONDO ANIMADO - Solo visible si no está activo */}
-    {!isOffersActive && (
-      <div className="absolute inset-0 opacity-10 group-hover:opacity-30 transition-opacity">
-        <div className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,transparent_0%,#f97316_50%,transparent_100%)] animate-[spin_4s_linear_infinite]" />
-      </div>
-    )}
+                <button
+                  onClick={handleOffersAction}
+                  className={`group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl transition-all duration-500 overflow-hidden border-2 ${isOffersActive
+                      ? 'bg-orange-600 shadow-[0_0_25px_rgba(249,115,22,0.6)] border-orange-400'
+                      : isDarkMode
+                        ? 'bg-slate-900 border-orange-500/40 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
+                        : 'bg-orange-50 border-orange-200 hover:border-orange-500 shadow-sm'
+                    }`}
+                >
+                  {/* EFECTO DE FONDO ANIMADO - Solo visible si no está activo */}
+                  {!isOffersActive && (
+                    <div className="absolute inset-0 opacity-10 group-hover:opacity-30 transition-opacity">
+                      <div className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,transparent_0%,#f97316_50%,transparent_100%)] animate-[spin_4s_linear_infinite]" />
+                    </div>
+                  )}
 
-    {/* Brillo interno de "respiración" */}
-    <div className={`absolute inset-0 bg-orange-500/5 ${!isOffersActive ? 'animate-pulse' : ''}`} />
+                  {/* Brillo interno de "respiración" */}
+                  <div className={`absolute inset-0 bg-orange-500/5 ${!isOffersActive ? 'animate-pulse' : ''}`} />
 
-    <div className="relative flex items-center gap-2 z-10">
-      {/* Icono con llama animada */}
-      <div className="relative">
-        <Flame
-          size={18}
-          className={`transition-all duration-500 ${
-            isOffersActive ? 'text-white scale-110' : 'text-orange-500 animate-bounce'
-          }`}
-          fill="currentColor"
-        />
-        {/* Resplandor detrás de la llama */}
-        <div className="absolute inset-0 bg-orange-500 blur-lg opacity-30 animate-pulse" />
-      </div>
+                  <div className="relative flex items-center gap-2 z-10">
+                    {/* Icono con llama animada */}
+                    <div className="relative">
+                      <Flame
+                        size={18}
+                        className={`transition-all duration-500 ${isOffersActive ? 'text-white scale-110' : 'text-orange-500 animate-bounce'
+                          }`}
+                        fill="currentColor"
+                      />
+                      {/* Resplandor detrás de la llama */}
+                      <div className="absolute inset-0 bg-orange-500 blur-lg opacity-30 animate-pulse" />
+                    </div>
 
-      <span className={`text-[12px] font-black uppercase tracking-[0.2em] italic transition-colors duration-500 ${
-        isOffersActive 
-          ? 'text-white' 
-          : isDarkMode ? 'text-orange-500 group-hover:text-white' : 'text-orange-600'
-      }`}>
-        Ofertas
-      </span>
-    </div>
+                    <span className={`text-[12px] font-black uppercase tracking-[0.2em] italic transition-colors duration-500 ${isOffersActive
+                        ? 'text-white'
+                        : isDarkMode ? 'text-orange-500 group-hover:text-white' : 'text-orange-600'
+                      }`}>
+                      Ofertas
+                    </span>
+                  </div>
 
-    {/* Rayo de luz (Shimmer) */}
-    <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
-  </button>
-</li>
+                  {/* Rayo de luz (Shimmer) */}
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
+                </button>
+              </li>
 
               {/* PANEL ADMIN (Solo logueados) */}
               {mounted && isLoggedIn && (

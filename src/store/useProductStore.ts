@@ -117,7 +117,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
   },
 
   filterByCategory: (category) => {
-    set({ activeCategory: category });
+    // Al cambiar de categoría, solemos querer resetear la lupa para no confundir al usuario
+    set({ activeCategory: category, searchQuery: "" }); 
     get().applyFilters();
   },
 

@@ -29,7 +29,6 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
       if (esOferta && !product.isOferta) return false;
 
       // 2. Filtro de Categoría: Solo filtrar por categoría si NO estamos en la sección global de Ofertas
-      // (O si quieres filtrar categorías DENTRO de ofertas, quita el !esOferta)
       if (categoriaURL !== "Todas" && product.category !== categoriaURL) return false;
 
       // 3. Filtro de Búsqueda (Lupa): Siempre debe actuar sobre el resultado anterior
@@ -42,6 +41,7 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
 
     return { title: displayTitle, filteredProducts: products };
   }, [initialProducts, categoriaURL, esOferta, query]);
+
   const hayFiltroActivo = categoriaURL !== "Todas" || esOferta || query !== "";
 
   return (
@@ -112,13 +112,13 @@ export default function ProductosClientContent({ initialProducts = [] }: Props) 
                 >
                   {/* CONTENEDOR DE IMAGEN */}
                   <div className="relative aspect-square w-full bg-neutral-500/5 dark:bg-white/5 flex items-center justify-center p-8 sm:p-12">
-                  <Image
-    src={product.image}
-    alt={product.name}
-    fill
-    className="object-contain transition-transform duration-700 group-hover:scale-110"
-    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-  />
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-contain transition-transform duration-700 group-hover:scale-110"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    />
                     
                     {product.isOferta && (
                       <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
