@@ -70,17 +70,34 @@ export const Navbar = ({ categories }: NavbarProps) => {
   const handleCategoryAction = (categoryName: string) => {
     setIsMobileMenuOpen(false);
     setIsDropdownOpen(false);
-  
+
     // SOLO navegamos. No llamamos a filterByCategory aquí.
     router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
   };
-  
+
   const handleOffersAction = () => {
     setIsMobileMenuOpen(false);
     // SOLO navegamos. No llamamos a filterByOffers aquí.
     router.push(`/productos?oferta=true`);
   };
-
+  const handleAdminClick = () => {
+    // Verificamos si el usuario actual es el de la imagen (por email o ID)
+    const isAdminEmail = user?.email === "admin@engine.com";
+    const isAdminId = user?.id === "69b22b47d965c2be83a91798";
+  
+    if (isAdminEmail || isAdminId) {
+      console.log("🔓 Usuario verificado. Abriendo Panel Admin...");
+      
+      // "Harcodeamos" la cookie de sesión para el servidor
+      document.cookie = "session=true; path=/; max-age=3600; SameSite=Lax";
+      
+      // Saltamos al admin
+      router.push('/admin');
+    } else {
+      // Si no es el admin de la imagen, podrías mostrar una alerta
+      console.error("❌ No tienes permisos de super-usuario.");
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -110,20 +127,20 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
           {/* IZQUIERDA: LOGO + SALUDO DINÁMICO */}
           <div className="flex items-center gap-6">
-          <button 
-  onClick={handleGoHome} 
-  className="flex items-center gap-2 group shrink-0 focus:outline-none"
->
-  <div className="bg-blue-600 text-white p-2 rounded-xl shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
-    <Laptop size={22} />
-  </div>
-  <span 
-    className="text-lg font-black tracking-tighter hidden sm:block uppercase" 
-    style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
-  >
-    TECH<span className="text-blue-600">STORE</span>
-  </span>
-</button>
+            <button
+              onClick={handleGoHome}
+              className="flex items-center gap-2 group shrink-0 focus:outline-none"
+            >
+              <div className="bg-blue-600 text-white p-2 rounded-xl shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
+                <Laptop size={22} />
+              </div>
+              <span
+                className="text-lg font-black tracking-tighter hidden sm:block uppercase"
+                style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
+              >
+                TECH<span className="text-blue-600">STORE</span>
+              </span>
+            </button>
 
             {/* RECUPERADO: Saludo de Bienvenida Desktop */}
             {mounted && isLoggedIn && (
@@ -137,10 +154,10 @@ export const Navbar = ({ categories }: NavbarProps) => {
           {/* CENTRO: NAVEGACIÓN DESKTOP */}
           <div className="flex items-center">
             <ul className="hidden md:flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
-            <li>
-                <button 
-                  onClick={handleGoHome} 
-                  className="hover:text-blue-600 transition-colors" 
+              <li>
+                <button
+                  onClick={handleGoHome}
+                  className="hover:text-blue-600 transition-colors"
                   style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
                 >
                   Inicio
@@ -191,10 +208,10 @@ export const Navbar = ({ categories }: NavbarProps) => {
                 <button
                   onClick={handleOffersAction}
                   className={`group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl transition-all duration-500 overflow-hidden border-2 ${isOffersActive
-                      ? 'bg-orange-600 shadow-[0_0_25px_rgba(249,115,22,0.6)] border-orange-400'
-                      : isDarkMode
-                        ? 'bg-slate-900 border-orange-500/40 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
-                        : 'bg-orange-50 border-orange-200 hover:border-orange-500 shadow-sm'
+                    ? 'bg-orange-600 shadow-[0_0_25px_rgba(249,115,22,0.6)] border-orange-400'
+                    : isDarkMode
+                      ? 'bg-slate-900 border-orange-500/40 hover:border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)]'
+                      : 'bg-orange-50 border-orange-200 hover:border-orange-500 shadow-sm'
                     }`}
                 >
                   {/* EFECTO DE FONDO ANIMADO - Solo visible si no está activo */}
@@ -221,8 +238,8 @@ export const Navbar = ({ categories }: NavbarProps) => {
                     </div>
 
                     <span className={`text-[12px] font-black uppercase tracking-[0.2em] italic transition-colors duration-500 ${isOffersActive
-                        ? 'text-white'
-                        : isDarkMode ? 'text-orange-500 group-hover:text-white' : 'text-orange-600'
+                      ? 'text-white'
+                      : isDarkMode ? 'text-orange-500 group-hover:text-white' : 'text-orange-600'
                       }`}>
                       Ofertas
                     </span>
@@ -235,13 +252,16 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
               {/* PANEL ADMIN (Solo logueados) */}
               {mounted && isLoggedIn && (
-                <li>
-                  <Link href="/admin" className="group relative flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-blue-500/25 active:scale-95 text-white font-black text-[9px]"
-                    style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}>
-                    <ShieldCheck size={14} /> PANEL ADMIN
-                  </Link>
-                </li>
-              )}
+  <li>
+    <Link 
+      href="/admin" 
+      onClick={handleAdminClick} // Agregamos este log
+      className="group relative flex items-center gap-2 px-5 py-2.5..."
+    >
+      <ShieldCheck size={14} /> PANEL ADMIN
+    </Link>
+  </li>
+)}
 
               {/* INGRESAR (Solo no logueados) */}
               {mounted && !isLoggedIn && (
