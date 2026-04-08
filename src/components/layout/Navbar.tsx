@@ -14,19 +14,13 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { TechLoader } from '@/components/ui/TechLoader';
 import { AnimatePresence } from 'framer-motion';
 
-interface NavbarProps {
-  categories: any[];
-}
-
-export const Navbar = ({ categories }: NavbarProps) => {
+export const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
   const cart = useCartStore((state) => state.cart);
   const { isLoggedIn, logout, user } = useAuthStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const clearFilters = useProductStore((state) => state.clearFilters);
-  const filterByCategory = useProductStore((state) => state.filterByCategory);
-  const filterByOffers = useProductStore((state) => state.filterByOffers);
 
   const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -46,15 +40,9 @@ export const Navbar = ({ categories }: NavbarProps) => {
     }
   }, []);
 
-
   const handleGoHome = () => {
-    // 1. Limpiamos TODO el estado de filtros en el Store
     clearFilters();
-
-    // 2. Cerramos menús móviles
     setIsMobileMenuOpen(false);
-
-    // 3. Navegamos a la raíz
     router.push('/');
   };
 
@@ -67,34 +55,19 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
   const itemCount = mounted ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
-  const handleCategoryAction = (categoryName: string) => {
-    setIsMobileMenuOpen(false);
-    setIsDropdownOpen(false);
-
-    // SOLO navegamos. No llamamos a filterByCategory aquí.
-    router.push(`/productos?categoria=${encodeURIComponent(categoryName)}`);
-  };
-
   const handleOffersAction = () => {
     setIsMobileMenuOpen(false);
-    // SOLO navegamos. No llamamos a filterByOffers aquí.
     router.push(`/productos?oferta=true`);
   };
+
   const handleAdminClick = () => {
-    // Verificamos si el usuario actual es el de la imagen (por email o ID)
     const isAdminEmail = user?.email === "admin@engine.com";
     const isAdminId = user?.id === "69b22b47d965c2be83a91798";
-  
+
     if (isAdminEmail || isAdminId) {
-      console.log("🔓 Usuario verificado. Abriendo Panel Admin...");
-      
-      // "Harcodeamos" la cookie de sesión para el servidor
       document.cookie = "session=true; path=/; max-age=3600; SameSite=Lax";
-      
-      // Saltamos al admin
-      router.push('/admin');
+      router.push('/admin/dashboard');
     } else {
-      // Si no es el admin de la imagen, podrías mostrar una alerta
       console.error("❌ No tienes permisos de super-usuario.");
     }
   };
@@ -111,11 +84,10 @@ export const Navbar = ({ categories }: NavbarProps) => {
 
   return (
     <>
-
       <AnimatePresence>
         {isLoggingOut && <TechLoader mode="logout" />}
       </AnimatePresence>
-
+      
       <nav
         className="relative w-full z-40 border-b h-20 flex items-center shadow-sm transition-colors duration-300"
         style={{
@@ -125,24 +97,17 @@ export const Navbar = ({ categories }: NavbarProps) => {
       >
         <div className="max-w-7xl mx-auto px-4 w-full flex items-center justify-between gap-4">
 
-          {/* IZQUIERDA: LOGO + SALUDO DINÁMICO */}
+          {/* IZQUIERDA: LOGO */}
           <div className="flex items-center gap-6">
-            <button
-              onClick={handleGoHome}
-              className="flex items-center gap-2 group shrink-0 focus:outline-none"
-            >
+            <button onClick={handleGoHome} className="flex items-center gap-2 group shrink-0 focus:outline-none">
               <div className="bg-blue-600 text-white p-2 rounded-xl shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
                 <Laptop size={22} />
               </div>
-              <span
-                className="text-lg font-black tracking-tighter hidden sm:block uppercase"
-                style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
-              >
+              <span className="text-lg font-black tracking-tighter hidden sm:block uppercase" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
                 TECH<span className="text-blue-600">STORE</span>
               </span>
             </button>
 
-            {/* RECUPERADO: Saludo de Bienvenida Desktop */}
             {mounted && isLoggedIn && (
               <div className="hidden lg:flex flex-col border-l pl-6 border-slate-500/20 leading-tight">
                 <span className="text-[8px] font-bold uppercase tracking-[0.2em] opacity-50" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>Bienvenido</span>
@@ -155,55 +120,12 @@ export const Navbar = ({ categories }: NavbarProps) => {
           <div className="flex items-center">
             <ul className="hidden md:flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
               <li>
-                <button
-                  onClick={handleGoHome}
-                  className="hover:text-blue-600 transition-colors"
-                  style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
-                >
+                <button onClick={handleGoHome} className="hover:text-blue-600 transition-colors" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
                   Inicio
                 </button>
               </li>
 
-              {/* DROPDOWN CATEGORÍAS */}
-              <li
-                className="relative group"
-                onMouseEnter={() => setIsDropdownOpen(true)}
-                onMouseLeave={() => setIsDropdownOpen(false)}
-              >
-                <button
-                  className="flex items-center gap-1 hover:text-blue-600 transition-colors py-8"
-                  style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
-                >
-                  Categorías <ChevronRight size={12} className={`transition-transform duration-300 ${isDropdownOpen ? 'rotate-90' : ''}`} />
-                </button>
-
-                <div className={`absolute top-[70px] left-0 w-56 rounded-2xl border shadow-2xl transition-all duration-300 origin-top-left z-[50] ${isDropdownOpen
-                  ? 'opacity-100 scale-100 translate-y-0 visible'
-                  : 'opacity-0 scale-95 -translate-y-2 invisible'
-                  }`}
-                  style={{
-                    backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
-                    borderColor: isDarkMode ? '#334155' : '#f1f5f9'
-                  }}>
-                  <div className="p-2 space-y-1">
-                    {categories.map((cat: any) => (
-                      <button
-                        key={cat._id}
-                        onClick={() => handleCategoryAction(cat.name)}
-                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-600/10 group/item transition-all text-left"
-                      >
-                        <span className="text-[11px] font-bold group-hover/item:text-blue-600" style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>
-                          {cat.name}
-                        </span>
-                        <ChevronRight size={14} className="text-blue-600 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </li>
-
               {/* BOTÓN OFERTAS */}
-              {/* BOTÓN OFERTAS DESKTOP */}
               <li>
                 <button
                   onClick={handleOffersAction}
@@ -214,56 +136,30 @@ export const Navbar = ({ categories }: NavbarProps) => {
                       : 'bg-orange-50 border-orange-200 hover:border-orange-500 shadow-sm'
                     }`}
                 >
-                  {/* EFECTO DE FONDO ANIMADO - Solo visible si no está activo */}
-                  {!isOffersActive && (
-                    <div className="absolute inset-0 opacity-10 group-hover:opacity-30 transition-opacity">
-                      <div className="absolute inset-[-100%] bg-[conic-gradient(from_0deg,transparent_0%,#f97316_50%,transparent_100%)] animate-[spin_4s_linear_infinite]" />
-                    </div>
-                  )}
-
-                  {/* Brillo interno de "respiración" */}
-                  <div className={`absolute inset-0 bg-orange-500/5 ${!isOffersActive ? 'animate-pulse' : ''}`} />
-
                   <div className="relative flex items-center gap-2 z-10">
-                    {/* Icono con llama animada */}
-                    <div className="relative">
-                      <Flame
-                        size={18}
-                        className={`transition-all duration-500 ${isOffersActive ? 'text-white scale-110' : 'text-orange-500 animate-bounce'
-                          }`}
-                        fill="currentColor"
-                      />
-                      {/* Resplandor detrás de la llama */}
-                      <div className="absolute inset-0 bg-orange-500 blur-lg opacity-30 animate-pulse" />
-                    </div>
-
-                    <span className={`text-[12px] font-black uppercase tracking-[0.2em] italic transition-colors duration-500 ${isOffersActive
-                      ? 'text-white'
-                      : isDarkMode ? 'text-orange-500 group-hover:text-white' : 'text-orange-600'
-                      }`}>
+                    <Flame size={18} className={`${isOffersActive ? 'text-white' : 'text-orange-500 animate-bounce'}`} fill="currentColor" />
+                    <span className={`text-[12px] font-black uppercase tracking-[0.2em] italic ${isOffersActive ? 'text-white' : 'text-orange-600'}`}>
                       Ofertas
                     </span>
                   </div>
-
-                  {/* Rayo de luz (Shimmer) */}
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
                 </button>
               </li>
 
-              {/* PANEL ADMIN (Solo logueados) */}
+              {/* PANEL ADMIN */}
               {mounted && isLoggedIn && (
-  <li>
-    <Link 
-      href="/admin" 
-      onClick={handleAdminClick} // Agregamos este log
-      className="group relative flex items-center gap-2 px-5 py-2.5..."
-    >
-      <ShieldCheck size={14} /> PANEL ADMIN
-    </Link>
-  </li>
-)}
+                <li>
+                  <button 
+                    onClick={handleAdminClick}
+                    className="group relative flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-blue-500/25 active:scale-95 text-white font-black text-[9px] overflow-hidden"
+                    style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                  >
+                    <ShieldCheck size={14} className="relative z-10" />
+                    <span className="relative z-10 uppercase">Panel Admin</span>
+                  </button>
+                </li>
+              )}
 
-              {/* INGRESAR (Solo no logueados) */}
               {mounted && !isLoggedIn && (
                 <li>
                   <Link href="/login" className="flex items-center gap-2 px-5 py-2 rounded-xl border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 font-black">
@@ -274,31 +170,23 @@ export const Navbar = ({ categories }: NavbarProps) => {
             </ul>
           </div>
 
-          {/* DERECHA: ICONOS + LOGOUT */}
+          {/* DERECHA: ICONOS */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Saludo Mobile Compacto */}
-            {mounted && isLoggedIn && (
-              <div className="md:hidden flex items-center justify-center px-3 py-1 rounded-lg border border-blue-600/20 bg-blue-600/5">
-                <span className="text-[9px] font-black uppercase text-blue-600">{user?.name?.split(' ')[0]}</span>
-              </div>
-            )}
-
-            <button onClick={toggleTheme} className="p-2.5 rounded-xl border transition-all"
-              style={{ borderColor: isDarkMode ? '#1e293b' : '#f1f5f9', color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+            <button onClick={toggleTheme} className="p-2.5 rounded-xl border transition-all" style={{ borderColor: isDarkMode ? '#1e293b' : '#f1f5f9', color: isDarkMode ? '#94a3b8' : '#64748b' }}>
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
             <Link href="/cart" className="relative p-2.5 rounded-xl transition-all hover:bg-blue-600/5" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>
               <ShoppingCart size={22} />
               {mounted && itemCount > 0 && (
-                <span className="absolute top-1 right-1 bg-blue-600 text-white text-[9px] font-black min-w-[16px] h-4 flex items-center justify-center rounded-full px-1 animate-cart-pop">
+                <span className="absolute top-1 right-1 bg-blue-600 text-white text-[9px] font-black min-w-[16px] h-4 flex items-center justify-center rounded-full px-1">
                   {itemCount}
                 </span>
               )}
             </Link>
 
             {mounted && isLoggedIn && (
-              <button onClick={handleLogout} className="hidden md:flex items-center gap-2 p-2.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/20">
+              <button onClick={handleLogout} className="hidden md:flex items-center gap-2 p-2.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-all">
                 <LogOut size={22} />
               </button>
             )}
@@ -310,48 +198,35 @@ export const Navbar = ({ categories }: NavbarProps) => {
         </div>
       </nav>
 
-      {/* MENÚ LATERAL MOBILE */}
+      {/* MENÚ LATERAL MOBILE (Simplificado sin categorías) */}
       <div className={`fixed inset-0 z-[100] flex justify-end p-5 transition-all duration-500 ${isMobileMenuOpen ? 'visible' : 'invisible'}`}>
         <div className={`absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity duration-500 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsMobileMenuOpen(false)} />
 
         <div className={`relative w-[320px] transition-all duration-500 flex flex-col rounded-[2rem] overflow-hidden ${isMobileMenuOpen ? 'translate-x-0 scale-100' : 'translate-x-10 scale-95 opacity-0'}`}
-          style={{ backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', border: `1px solid ${isDarkMode ? '#1e293b' : '#e2e8f0'}`, height: 'fit-content', maxHeight: sidebarMaxHeight }}>
+          style={{ backgroundColor: isDarkMode ? '#0f172a' : '#ffffff', maxHeight: sidebarMaxHeight }}>
 
           <div className="p-5 flex items-center justify-between border-b" style={{ borderColor: isDarkMode ? '#1e293b' : '#f1f5f9' }}>
-            <div className="flex flex-col">
-              <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>Menú Explorar</span>
-              {mounted && isLoggedIn && <span className="text-[10px] font-bold text-blue-600">Hola, {user?.name}</span>}
-            </div>
-            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-full hover:bg-red-500/10" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}><X size={20} /></button>
+            <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>Menú</span>
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-full hover:bg-red-500/10"><X size={20} /></button>
           </div>
 
-          <div className="overflow-y-auto px-5 py-4 space-y-6">
-            <button
-              onClick={handleOffersAction}
-              className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg"
-            >
+          <div className="p-5 space-y-4">
+            <button onClick={handleOffersAction} className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg">
               <div className="flex items-center gap-3">
                 <Flame size={18} />
                 <span className="text-[11px] font-black uppercase tracking-widest">Ofertas Hot</span>
               </div>
               <ChevronRight size={18} />
             </button>
-
-            <div className="space-y-1">
-              <span className="px-2 text-[9px] font-bold uppercase tracking-[0.3em] text-blue-500 mb-2 block">Categorías</span>
-              {categories.map((cat: any) => (
-                <button key={cat._id} onClick={() => handleCategoryAction(cat.name)} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-blue-600/5 group transition-all">
-                  <span className="text-[12px] font-bold group-hover:text-blue-600" style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>{cat.name}</span>
-                  <ChevronRight size={16} className="text-blue-600 opacity-0 group-hover:opacity-100" />
-                </button>
-              ))}
-            </div>
+            
+            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 text-[12px] font-bold" style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>Inicio</Link>
+            <Link href="/productos" onClick={() => setIsMobileMenuOpen(false)} className="block p-3 text-[12px] font-bold" style={{ color: isDarkMode ? '#cbd5e1' : '#334155' }}>Todos los productos</Link>
           </div>
 
           <div className="p-5 mt-auto border-t" style={{ backgroundColor: isDarkMode ? '#161e2f' : '#f8fafc', borderColor: isDarkMode ? '#1e293b' : '#f1f5f9' }}>
             {mounted && isLoggedIn ? (
               <div className="space-y-3">
-                <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-[10px]"><ShieldCheck size={16} /> Panel Admin</Link>
+                <button onClick={handleAdminClick} className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-[10px]"><ShieldCheck size={16} /> Panel Admin</button>
                 <button onClick={handleLogout} className="w-full py-2 text-[10px] font-black uppercase text-red-500">Cerrar Sesión</button>
               </div>
             ) : (
