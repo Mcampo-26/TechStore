@@ -1,227 +1,246 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CountUp from 'react-countup';
 import { 
-  Users, Activity, DollarSign, Cpu, 
-  ShoppingCart, Wrench, BarChart3, Star,
-  Database, ShieldAlert
+  Cpu, ShoppingCart, BarChart3, Settings, Plus, Globe, 
+  ShieldAlert, LayoutDashboard, Zap, Star, Database, Wrench, Activity
 } from 'lucide-react';
 import { 
-  AreaChart, Area, XAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer
+  AreaChart, Area, XAxis, CartesianGrid, Tooltip, 
+  ResponsiveContainer, BarChart, Bar, Cell
 } from 'recharts';
 
-// Datos para el gráfico
-const data = [
-  { name: 'Lun', sales: 4000 },
-  { name: 'Mar', sales: 3000 },
-  { name: 'Mie', sales: 2000 },
-  { name: 'Jue', sales: 2780 },
-  { name: 'Vie', sales: 1890 },
-  { name: 'Sab', sales: 2390 },
-  { name: 'Dom', sales: 3490 },
+const initialDemandData = [
+  { time: '0h', real: 2100 }, { time: '4h', real: 3500 },
+  { time: '8h', real: 2800 }, { time: '12h', real: 5100 },
+  { time: '16h', real: 4200 }, { time: '20h', real: 6800 },
 ];
 
-export const AdminDashboard = () => {
+export default function AdminDashboardPage() {
   const [mounted, setMounted] = useState(false);
-  const [stats, setStats] = useState({ ventas: 12540, usuarios: 842, productos: 124, rendimiento: 98.2 });
-  const [logs, setLogs] = useState(["SISTEMA: Conexión cifrada", "STOCK: Repuestos actualizados"]);
-  const [isAlertActive, setIsAlertActive] = useState(false);
-  const [triggerUpdate, setTriggerUpdate] = useState(0);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const [rentabilidad, setRentabilidad] = useState(12.9);
+  const [totalSales, setTotalSales] = useState(547);
+  const [inventory, setInventory] = useState([
+    { name: 'DJI Air 2S', stock: 79, color: 'bg-cyan-400', stroke: '#22d3ee' },
+    { name: 'Skydio X10', stock: 71, color: 'bg-cyan-400', stroke: '#22d3ee' },
+    { name: 'Autel EVO', stock: 64, color: 'bg-cyan-400', stroke: '#22d3ee' },
+    { name: 'Repuestos', stock: 40, color: 'bg-red-500', stroke: '#ef4444' },
+  ]);
+  const [chartData, setChartData] = useState(initialDemandData);
+  const [logs, setLogs] = useState<string[]>([
+    "SISTEMA: Conexión cifrada",
+    "STOCK: Repuestos actualizados",
+    "NODE: Sincronización completa"
+  ]);
 
   useEffect(() => {
     setMounted(true);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  const handleNuevaVenta = () => {
-    setStats(prev => ({ ...prev, ventas: prev.ventas + 320, usuarios: prev.usuarios + 1 }));
-    setLogs(prev => [`VENTA_REPUESTO: +$320`, ...prev.slice(0, 3)]);
-    setTriggerUpdate(p => p + 1);
-    setIsAlertActive(true);
-    setTimeout(() => setIsAlertActive(false), 500);
-  };
+  const handleNuevaVenta = useCallback(() => {
+    setIsSyncing(true);
+    setRentabilidad(prev => Math.min(45, prev + 5.0));
+    setTotalSales(prev => prev + 1);
+    setInventory(prev => prev.map(item => ({
+      ...item,
+      stock: Math.max(5, item.stock - (Math.random() > 0.6 ? 1 : 0))
+    })));
+    setChartData(prev => {
+      const newData = [...prev];
+      const last = newData.length - 1;
+      newData[last] = { ...newData[last], real: newData[last].real + 900 };
+      return newData;
+    });
+    setLogs(prev => [`VENTA_REGISTRADA: +1 Unidad [${new Date().toLocaleTimeString()}]`, ...prev.slice(0, 4)]);
+    setTimeout(() => setIsSyncing(false), 500);
+  }, []);
 
-  if (!mounted) return <div className="min-h-screen bg-slate-50" />;
+  if (!mounted) return <div className="min-h-screen bg-slate-950" />;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans">
       
-      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-600/10 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="w-full mx-auto space-y-6 relative z-10">
         
-        {/* HEADER: Limpio y Profesional */}
-        <header className="flex flex-col md:flex-row justify-between items-center gap-6 p-6 bg-white rounded-3xl shadow-sm border border-slate-200">
+        {/* Header - Full Width */}
+        <header className="flex flex-col lg:flex-row justify-between items-center gap-5 p-6 bg-slate-800/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-slate-100 rounded-2xl text-blue-600 border border-slate-200">
-              <Cpu size={28} />
+            <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-400/30">
+              <Cpu className="text-cyan-400" size={28} />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-slate-950 tracking-tighter uppercase italic">
-                SpareParts<span className="text-blue-600">HUB</span>
+              <h1 className="text-2xl font-black text-white italic tracking-tighter uppercase">
+                Dron  <span className="text-cyan-400">Store</span>
               </h1>
-              <p className="text-[10px] tracking-[0.2em] text-slate-500 uppercase font-bold">Gestión de Inventario v3.5</p>
+              <p className="text-[10px] tracking-[0.3em] text-slate-400 uppercase font-bold">Gestión de Inventario Pro</p>
             </div>
           </div>
 
-          <button 
-            onClick={handleNuevaVenta}
-            className={`group relative px-10 py-4 rounded-2xl transition-all duration-300 font-bold text-xs uppercase tracking-widest overflow-hidden shadow-sm active:scale-95 ${
-              isAlertActive 
-                ? 'bg-red-600 text-white scale-95 shadow-lg' 
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            <span className="relative z-10 flex items-center gap-3"> <ShoppingCart size={18}/> Registrar Venta </span>
-          </button>
+          <div className="flex items-center gap-8">
+            <button 
+              onClick={handleNuevaVenta}
+              disabled={isSyncing}
+              className="relative px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest overflow-hidden border border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(34,211,238,0.1)]"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                {isSyncing ? <Activity size={16} className="animate-spin" /> : <Plus size={16} />}
+                {isSyncing ? 'Procesando...' : 'Registrar Venta'}
+              </span>
+            </button>
+            <div className="text-3xl font-mono font-bold text-cyan-400 tabular-nums">
+              {currentTime.toLocaleTimeString([], { hour12: false })}
+            </div>
+          </div>
         </header>
 
-        <div className="grid grid-cols-12 gap-8">
+        <div className="flex flex-col lg:flex-row gap-6">
           
-          {/* PANEL IZQUIERDO: POPULARIDAD */}
-          <div className="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-8 flex items-center gap-2">
-              <Star size={14} className="text-amber-400" /> Repuestos Destacados
-            </h3>
+          {/* Sidebar */}
+          <aside className="flex lg:flex-col gap-4">
+            <NavIcon icon={LayoutDashboard} active />
+            <NavIcon icon={Database} />
+            <NavIcon icon={ShoppingCart} />
+            <NavIcon icon={BarChart3} />
+            <NavIcon icon={Settings} />
+          </aside>
+
+          {/* Main Content - Full Screen Grid */}
+          <main className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6">
             
-            <div className="relative flex justify-center py-4">
-              <svg className="w-48 h-48 -rotate-90">
-                <circle cx="96" cy="96" r="80" className="stroke-slate-100" strokeWidth="12" fill="transparent" />
-                <motion.circle 
-                  cx="96" cy="96" r="80" className="stroke-blue-600" strokeWidth="12" fill="transparent" 
-                  strokeDasharray="502" 
-                  initial={{ strokeDashoffset: 502 }}
-                  animate={{ strokeDashoffset: 502 - (502 * (65 + (triggerUpdate % 5))) / 100 }}
-                  transition={{ duration: 1 }}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-black text-slate-900 italic">
-                  <CountUp end={65} suffix="%" duration={1} />
-                </span>
-                <span className="text-[9px] text-slate-400 uppercase font-bold">Demanda de Stock</span>
+            {/* Rendimiento */}
+            <section className="bg-slate-800/30 backdrop-blur-md border border-white/5 rounded-3xl p-8 flex items-center justify-around shadow-xl">
+              <div className="relative w-64 h-64">
+                <svg className="w-full h-full -rotate-90">
+                  <circle cx="50%" cy="50%" r="42%" className="stroke-slate-700" strokeWidth="10" fill="transparent" />
+                  <motion.circle 
+                    cx="50%" cy="50%" r="42%" className="stroke-cyan-500" strokeWidth="10" fill="transparent" 
+                    strokeDasharray="100 100" 
+                    animate={{ strokeDashoffset: 100 - rentabilidad * 2.5 }}
+                    strokeLinecap="round"
+                    style={{ filter: 'drop-shadow(0 0 8px #06b6d4)' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-5xl font-black text-white italic"><CountUp end={rentabilidad} decimals={1} />%</span>
+                  <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Rentabilidad</span>
+                </div>
               </div>
-            </div>
+              <div className="space-y-6">
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Ventas Totales</p>
+                  <p className="text-3xl font-black text-white"><CountUp end={totalSales} /></p>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">
+                  <Zap size={14} className="animate-pulse" /> SISTEMA ONLINE
+                </div>
+              </div>
+            </section>
 
-            <div className="mt-8 space-y-4">
-               <PopularItem label="Motores Brushless" percent={88} color="bg-blue-600" />
-               <PopularItem label="Controladoras FPV" percent={72} color="bg-slate-400" />
-               <PopularItem label="Hélices Carbono" percent={94} color="bg-emerald-500" />
-            </div>
-          </div>
+            {/* Inventario */}
+            <section className="bg-slate-800/30 backdrop-blur-md border border-white/5 rounded-3xl p-8 shadow-xl">
+              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                <Database size={14} /> Niveles de Stock
+              </h3>
+              <div className="h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={inventory}>
+                    <XAxis dataKey="name" hide />
+                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{backgroundColor: '#1e293b', border: 'none', borderRadius: '8px'}} />
+                    <Bar dataKey="stock" radius={[4, 4, 0, 0]} barSize={50}>
+                      {inventory.map((entry, index) => (
+                        <Cell key={index} fill={entry.stock < 50 ? '#ef4444' : '#06b6d4'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                {inventory.map((item, i) => (
+                  <div key={i} className="space-y-1">
+                    <div className="flex justify-between text-[10px] font-bold uppercase">
+                      <span className="text-slate-400">{item.name}</span>
+                      <span className="text-white">{item.stock}%</span>
+                    </div>
+                    <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <motion.div animate={{ width: `${item.stock}%` }} className={`h-full ${item.color}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-          {/* PANEL DERECHO: MÉTRICAS Y GRÁFICO */}
-          <div className="col-span-12 lg:col-span-8 space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-               <MiniMetric label="Total Facturado" val={stats.ventas} prefix="$" icon={DollarSign} />
-               <MiniMetric label="Clientes" val={stats.usuarios} icon={Users} />
-               <MiniMetric label="Eficiencia" val={stats.rendimiento} suffix="%" icon={Activity} />
-            </div>
+            {/* Logs */}
+            <section className="bg-slate-900/40 border border-white/5 rounded-3xl p-8 shadow-xl">
+              <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <Wrench size={14} /> Terminal de Eventos
+              </h3>
+              <div className="space-y-3 font-mono text-[11px]">
+                {logs.map((log, i) => (
+                  <div key={i} className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="text-cyan-500/50">[{currentTime.toLocaleTimeString()}]</span>
+                    <span className="text-slate-200">{log}</span>
+                    <span className="text-emerald-500 text-[9px] font-bold">OK</span>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-            {/* GRÁFICO TÉCNICO LIMPIO */}
-            <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm min-h-[400px]">
-               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-10">
-                 <BarChart3 size={16} className="text-blue-600"/> Flujo de Ventas Real-Time
-               </h3>
+            {/* Capital */}
+            <section className="bg-slate-800/30 backdrop-blur-md border border-white/5 rounded-3xl p-8 shadow-xl">
+              <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                <BarChart3 size={14} /> Flujo de Capital
+              </h3>
+              <div className="h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorReal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.1} />
+                    <XAxis dataKey="time" hide />
+                    <Tooltip contentStyle={{backgroundColor: '#1e293b', border: 'none'}} />
+                    <Area type="monotone" dataKey="real" stroke="#06b6d4" strokeWidth={3} fill="url(#colorReal)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
 
-               <div className="w-full h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data}>
-                      <defs>
-                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}}
-                      />
-                      <Tooltip 
-                        contentStyle={{borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#ffffff', color: '#1e293b'}}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="sales" 
-                        stroke="#2563eb" 
-                        strokeWidth={3}
-                        fillOpacity={1} 
-                        fill="url(#colorSales)" 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-               </div>
-            </div>
-
-            {/* HISTORIAL TERMINAL */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-inner">
-               <div className="flex items-center gap-3 mb-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  <Wrench size={14} /> Historial Operativo_
-               </div>
-               <div className="space-y-2">
-                 <AnimatePresence mode="popLayout">
-                    {logs.map((log, i) => (
-                      <motion.div 
-                        key={`${log}-${i}`}
-                        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                        className="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5"
-                      >
-                        <span className="text-slate-600">[{new Date().toLocaleTimeString()}]</span>
-                        <span className="text-slate-200 font-medium italic">{log}</span>
-                        <span className="text-emerald-500 font-bold">OK</span>
-                      </motion.div>
-                    ))}
-                 </AnimatePresence>
-               </div>
-            </div>
-          </div>
+          </main>
         </div>
 
-        {/* HUD FOOTER */}
-        <footer className="pt-6 border-t border-slate-200 flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
-            <div className="flex gap-6">
-              <span className="flex items-center gap-2"><Database size={14}/> DB_SYNC: Nominal</span>
-              <span className="flex items-center gap-2"><ShieldAlert size={14}/> Seguridad: Activa</span>
-            </div>
-            <div className="text-blue-600">ID Sesión: MAURICIO_ADMIN_S01</div>
+        <footer className="pt-6 border-t border-white/5 flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">
+          <div className="flex gap-6">
+            <span className="flex items-center gap-2"><Globe size={12}/> Global Node</span>
+            <span className="flex items-center gap-2"><ShieldAlert size={12}/> Encrypted AES-256</span>
+          </div>
+          <span>Mauricio Admin Panel v5.1</span>
         </footer>
-
       </div>
     </div>
   );
-};
+}
 
-// COMPONENTES AUXILIARES
-const MiniMetric = ({ label, val, icon: Icon, prefix = "", suffix = "" }: any) => (
-  <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm hover:border-blue-200 transition-all group">
-    <div className="flex justify-between items-start mb-2">
-       <span className="text-[10px] font-bold text-slate-400 uppercase">{label}</span>
-       <Icon size={16} className="text-blue-600 opacity-40 group-hover:opacity-100" />
-    </div>
-    <div className="text-3xl font-black text-slate-900 italic">
-      {prefix}<CountUp end={val} duration={1} separator="," decimals={suffix === '%' ? 1 : 0} />{suffix}
-    </div>
-  </div>
-);
-
-const PopularItem = ({ label, percent, color }: any) => (
-  <div className="space-y-1">
-    <div className="flex justify-between text-[10px] font-bold uppercase italic text-slate-600">
-      <span>{label}</span>
-      <span className="text-blue-600">{percent}%</span>
-    </div>
-    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-      <motion.div 
-        initial={{ width: 0 }} 
-        animate={{ width: `${percent}%` }} 
-        className={`h-full ${color}`} 
-      />
-    </div>
-  </div>
-);
-
-export default AdminDashboard;
+function NavIcon({ icon: Icon, active = false }: { icon: any, active?: boolean }) {
+  return (
+    <button className={`p-4 rounded-2xl transition-all border ${
+      active ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-lg' : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/20'
+    }`}>
+      <Icon size={22} />
+    </button>
+  );
+}
