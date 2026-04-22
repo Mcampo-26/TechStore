@@ -22,7 +22,8 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isLoggedIn: boolean;
-  setLogin: (userData: any, token: string) => void;
+  // Hacemos el token opcional (?) para evitar errores en el RegisterForm
+  setLogin: (userData: any, token?: string) => void;
   logout: () => void;
 }
 
@@ -35,41 +36,40 @@ export const useAuthStore = create<AuthState>()(
 
       setLogin: (userData, token) => {
         // 1. Extraemos el nombre real de la base de datos
-        // Prioridad: 
-        //   A. 'userData.name' (Donde MongoDB guarda "MAuricio")
-        //   B. 'userData.nombre' (Por si la API ya viene procesada)
-        //   C. Evitamos usar el email si el nombre real existe.
-        
-        let nombreFinal = "Usuario";
+        // Buscamos 'name' (Mongo) o 'nombre' (API) y evitamos que sea solo "admin"
+        let nombreFinal = "";
 
         if (userData.name && userData.name.toLowerCase() !== 'admin') {
           nombreFinal = userData.name;
         } else if (userData.nombre && userData.nombre.toLowerCase() !== 'admin') {
           nombreFinal = userData.nombre;
         } else {
+          // Fallback: nombre del email (ej: "raul" de raul@mail.com)
           nombreFinal = userData.email?.split('@')[0] || "Usuario";
         }
 
         const normalizedUser: User = {
           ...userData,
           id: userData.id || userData._id || "",
-          nombre: nombreFinal, // Forzamos el nombre limpio aquí
+          nombre: nombreFinal, // Sincronizamos con el campo que lee el Navbar
         };
+
+        const finalToken = token || null;
 
         // 2. Actualizamos el estado global
         set({ 
           user: normalizedUser, 
-          token: token,
+          token: finalToken,
           isLoggedIn: true 
         });
 
-        // 3. Persistencia en Cookies para el Middleware
-        if (typeof document !== 'undefined') {
-          document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax;`;
-          localStorage.setItem('token', token);
+        // 3. Persistencia en Cookies para el Middleware y LocalStorage
+        if (typeof document !== 'undefined' && finalToken) {
+          document.cookie = `token=${finalToken}; path=/; max-age=86400; SameSite=Lax;`;
+          localStorage.setItem('token', finalToken);
         }
 
-        // 4. Sincronización del Carrito
+        // 4. Sincronización del Carrito si el usuario ya tiene uno guardado
         if (userData.cart && Array.isArray(userData.cart)) {
           useCartStore.getState().setCart(userData.cart);
         }
@@ -82,15 +82,13 @@ export const useAuthStore = create<AuthState>()(
         if (typeof document !== 'undefined') {
           document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           localStorage.removeItem('token');
-          // Limpiamos el storage de Zustand manualmente para evitar datos persistentes corruptos
+          // Limpiamos el storage de Zustand para evitar datos persistentes viejos
           localStorage.removeItem('auth-storage');
         }
       },
     }),
     { 
       name: 'auth-storage',
-      // Opcional: puedes usar partialize para no guardar datos sensibles, 
-      // pero para este caso mantendremos la estructura actual.
     }
   )
 );
