@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Save, PlusCircle, Edit3, Zap, Image as ImageIcon, Check } from "lucide-react";
 import { useCategoryStore } from "@/store/useCategoryStore";
+import { useStockStore } from "@/store/useStockStore"; 
 import Swal from "sweetalert2";
 
 interface EditProductModalProps {
@@ -23,8 +24,28 @@ export const EditProductModal = ({
   isCreating = false
 }: EditProductModalProps) => {
   const { categories, addCategory } = useCategoryStore();
+  const { stocks } = useStockStore(); 
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+
+
+  // Sincronización: Buscamos el stock real del producto actual
+  const stockData = stocks.find((s: any) => {
+    // Forzamos la lectura de IDs tratando los valores como 'any' para evitar el error 'never'
+    const stockProdId = typeof s.producto === 'object' 
+      ? (s.producto as any)?._id 
+      : s.producto;
+
+    const currentProdId = typeof product === 'object' 
+      ? (product as any)?._id 
+      : product;
+    
+    return String(stockProdId) === String(currentProdId);
+  });
+
+  const currentRealStock = stockData ? stockData.totalQuantity : 0;
+
+
 
   useEffect(() => {
     if (isOpen) {
@@ -35,15 +56,14 @@ export const EditProductModal = ({
 
   if (!isOpen || !product) return null;
 
-  // --- VALIDACIÓN ANTES DE GUARDAR ---
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!product.name?.trim() || !product.category || !product.price || product.stock === undefined) {
+    if (!product.name?.trim() || !product.category || !product.price) {
       Swal.fire({
         icon: 'error',
         title: 'Campos incompletos',
-        text: 'Por favor, completa nombre, categoría, precio y stock.',
+        text: 'Por favor, completa nombre, categoría y precio.',
         confirmButtonColor: '#2563eb'
       });
       return;
@@ -55,7 +75,7 @@ export const EditProductModal = ({
         Swal.fire({
           icon: 'warning',
           title: 'Falta el descuento',
-          text: 'Si el producto está en oferta, debes ingresar un porcentaje de descuento válido (1-100).',
+          text: 'Si el producto está en oferta, debes ingresar un porcentaje válido.',
           confirmButtonColor: '#2563eb'
         });
         return;
@@ -170,12 +190,19 @@ export const EditProductModal = ({
                 <input type="number" className={inputClass} value={product.price || ""} onChange={(e) => setProduct({ ...product, price: Number(e.target.value) })} />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Stock</label>
-                <input type="number" className={inputClass} value={product.stock ?? ""} onChange={(e) => setProduct({ ...product, stock: Number(e.target.value) })} />
+                <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">
+                  Stock {isCreating ? "" : "(Sincronizado)"}
+                </label>
+                <input 
+                  type="number" 
+                  className={`${inputClass} ${!isCreating ? 'opacity-60 bg-blue-500/5 cursor-not-allowed' : ''}`}
+                  value={isCreating ? (product.stock ?? "") : currentRealStock} 
+                  onChange={(e) => setProduct({ ...product, stock: Number(e.target.value) })}
+                  readOnly={!isCreating}
+                />
               </div>
             </div>
 
-            {/* SECCIÓN DE IMÁGENES (Recuperadas) */}
             <div className="md:col-span-2 space-y-4">
               <div>
                 <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">Imagen Principal (URL)</label>

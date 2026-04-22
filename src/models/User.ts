@@ -1,21 +1,34 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, model, models } from 'mongoose';
+import './Role';
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+const UserSchema = new Schema({
+  // AGREGAMOS 'name' porque así está en tu base de datos física
+  name: { type: String }, 
+  // Mantenemos 'nombre' por compatibilidad con tu código actual
+  nombre: { type: String },
+  
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true, select: false },
-  role: { type: String, default: 'user' },
-  // AQUÍ GUARDAMOS EL CARRITO
+  
+  role: { 
+    type: Schema.Types.Mixed, 
+    ref: 'Role', 
+    required: true 
+  },
+
   cart: [
     {
-      id: String, // ID del producto
+      id: String,
       name: String,
       price: Number,
       image: String,
       quantity: { type: Number, default: 1 }
     }
   ]
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  // Esto permite que si en la DB hay campos no definidos aquí, no los borre al guardar
+  strict: false 
+});
 
-const User = mongoose.models.User || mongoose.model('User', userSchema);
-export default User;
+export default models.User || model('User', UserSchema);

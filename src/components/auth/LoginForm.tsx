@@ -21,7 +21,7 @@ export const LoginForm = ({ onStartLoading, onLoginError }: LoginFormProps) => {
   });
 
   const onSubmit = async (data: LoginInput) => {
-    onStartLoading(); // DISPARO INSTANTÁNEO DEL LOADER
+    onStartLoading();
     setError(null);
     try {
       const res = await fetch('/api/auth/login', {
@@ -29,15 +29,24 @@ export const LoginForm = ({ onStartLoading, onLoginError }: LoginFormProps) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      
       const result = await res.json();
+      
       if (!res.ok) throw new Error(result.message || 'Credenciales inválidas');
-      setLogin(result.user);
+
+      // 1. Guardamos en el Store 
+      // Al hacer esto, 'isLoggedIn' en LoginPage pasa a ser TRUE
+      setLogin(result.user, result.token);
+
+      // --- IMPORTANTE: ELIMINAMOS EL WINDOW.LOCATION.HREF ---
+      // Dejamos que LoginPage.tsx maneje la redirección con router.push
+      // para que el TechLoader tenga tiempo de mostrar el nombre.
+
     } catch (err: any) {
       setError(err.message);
-      onLoginError(); // SI FALLA, REGRESA AL FORMULARIO
+      onLoginError();
     }
   };
-
   return (
     <div className="rounded-[2.5rem] p-10 border shadow-sm transition-all"
          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-theme)' }}>

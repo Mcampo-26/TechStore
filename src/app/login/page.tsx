@@ -11,13 +11,16 @@ import { TechLoader } from '@/components/ui/TechLoader';
 export default function LoginPage() {
   const { isLoggedIn, user } = useAuthStore();
   const router = useRouter();
+  
+  // Estado para controlar la pantalla de carga
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // 1. Efecto para la redirección
   useEffect(() => {
     if (isLoggedIn) {
       const timer = setTimeout(() => {
         router.push('/');
-      }, 2500);
+      }, 3000); // 3 segundos para que dé tiempo de ver el "HOLA [NOMBRE]"
       return () => clearTimeout(timer);
     }
   }, [isLoggedIn, router]);
@@ -35,17 +38,16 @@ export default function LoginPage() {
     exit: {
       opacity: 0,
       filter: "blur(15px)",
-      scale: 0.98,
-      transition: { duration: 0.4, ease: "easeOut" }
+      scale: 0.95,
+      transition: { duration: 0.5, ease: "easeInOut" }
     }
   };
 
   const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 15, scale: 0.98 },
+    hidden: { opacity: 0, y: 15 },
     visible: { 
       opacity: 1, 
       y: 0, 
-      scale: 1,
       transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
     }
   };
@@ -53,8 +55,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen pt-32 pb-20 px-6" style={{ backgroundColor: 'var(--background)' }}>
       <div className="max-w-md mx-auto">
-        {/* 'popLayout' evita el hueco blanco entre componentes */}
-        <AnimatePresence mode="popLayout">
+        {/* Cambiamos mode="wait" para que el formulario se vaya antes de que entre el loader */}
+        <AnimatePresence mode="wait">
           {!isLoggedIn && !isTransitioning ? (
             <motion.div
               key="login-ui"
@@ -101,12 +103,19 @@ export default function LoginPage() {
               </motion.p>
             </motion.div>
           ) : (
-            <TechLoader 
-              key="loader"
-              mode="login" 
-              userName={user?.name} 
-              isStepTwo={isLoggedIn} 
-            />
+            <motion.div
+              key="loader-container"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <TechLoader 
+                mode="login" 
+                // Priorizamos nombre que viene de la normalización del store
+                userName={user?.nombre || user?.name || "Cargando..."} 
+                isStepTwo={isLoggedIn} 
+              />
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

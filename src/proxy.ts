@@ -1,31 +1,36 @@
-// src/proxy.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Next.js ahora busca específicamente el nombre "proxy" o un export default
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Intentamos obtener el token normal
-  const hasSession = request.cookies.get('session');
+  // 1. EVITAR BUCLES Y PROTEGER LA API
+  // Importante: No interceptar llamadas a /api para que los datos carguen
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next();
+  }
 
-  // 2. LOGICA DE PROTECCIÓN
+  // 2. OBTENER TOKEN
+  // Ajusta 'token' al nombre que uses en tus cookies
+  const token = request.cookies.get('token');
+
+  // 3. PROTECCIÓN DE RUTA ADMIN
   if (pathname.startsWith('/admin')) {
-    
-    // --- HARDCODE DE EMERGENCIA ---
-    // Si tienes una cookie de sesión o si queremos forzar que 
-    // el sistema confíe en el cliente por ahora.
-    if (hasSession) {
-      return NextResponse.next();
+    if (!token) {
+      console.log(`🚫 [PROXY] Acceso denegado a ${pathname}. Redirigiendo...`);
+      const loginUrl = new URL('/login', request.url);
+      return NextResponse.redirect(loginUrl);
     }
-
-    // Si no hay sesión, mandamos al login
-    console.log(`🚫 [PROXY] Bloqueado acceso a ${pathname}. Redirigiendo...`);
-    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return NextResponse.next();
 }
 
+// El matcher define qué rutas escucha este archivo
 export const config = {
-  matcher: ['/admin/:path*', '/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/admin/:path*',
+    '/api/:path*', // Lo incluimos en el matcher pero lo saltamos en el IF de arriba
+  ],
 };

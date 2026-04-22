@@ -6,16 +6,23 @@ import { useCartStore } from './useCartStore';
 
 interface User {
   id: string;
-  name: string;
+  _id?: string;
+  nombre: string; // La propiedad que consume tu Navbar y TechLoader
+  name?: string;   // El campo original de MongoDB
   email: string;
-  role: 'user' | 'admin';
+  role?: {
+    _id: string;
+    name: string;
+    permisos: Record<string, boolean>;
+  } | string;
   cart?: any[];
 }
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   isLoggedIn: boolean;
-  setLogin: (userData: any) => void;
+  setLogin: (userData: any, token: string) => void;
   logout: () => void;
 }
 
@@ -23,59 +30,67 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
       isLoggedIn: false,
 
-      setLogin: (userData) => {
-        // 1. Normalización de ID (soporta MongoDB _id e id estándar)
-        const normalizedUser = {
+      setLogin: (userData, token) => {
+        // 1. Extraemos el nombre real de la base de datos
+        // Prioridad: 
+        //   A. 'userData.name' (Donde MongoDB guarda "MAuricio")
+        //   B. 'userData.nombre' (Por si la API ya viene procesada)
+        //   C. Evitamos usar el email si el nombre real existe.
+        
+        let nombreFinal = "Usuario";
+
+        if (userData.name && userData.name.toLowerCase() !== 'admin') {
+          nombreFinal = userData.name;
+        } else if (userData.nombre && userData.nombre.toLowerCase() !== 'admin') {
+          nombreFinal = userData.nombre;
+        } else {
+          nombreFinal = userData.email?.split('@')[0] || "Usuario";
+        }
+
+        const normalizedUser: User = {
           ...userData,
           id: userData.id || userData._id || "",
-          // Aseguramos que el rol sea el que viene, o 'user' por defecto
-          role: userData.role || 'user'
+          nombre: nombreFinal, // Forzamos el nombre limpio aquí
         };
 
-        // 2. Actualizamos el estado global de Zustand
+        // 2. Actualizamos el estado global
         set({ 
           user: normalizedUser, 
+          token: token,
           isLoggedIn: true 
         });
 
-        // 3. SINCRONIZACIÓN CON EL SERVIDOR (COOKIES)
-        // Esto permite que el proxy.ts nos deje entrar al Panel Admin
+        // 3. Persistencia en Cookies para el Middleware
         if (typeof document !== 'undefined') {
-          // Hardcode de seguridad: Si es el admin de la imagen o tiene rol admin
-          if (normalizedUser.email === "admin@engine.com" || normalizedUser.role === 'admin') {
-            console.log("🔐 Creando cookie de sesión para Admin...");
-            // Creamos la cookie 'session' que busca tu proxy
-            document.cookie = "session=true; path=/; max-age=3600; SameSite=Lax";
-          }
+          document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax;`;
+          localStorage.setItem('token', token);
         }
 
-        // 4. Sincronización automática con el Carrito
-        // Si el usuario trae productos guardados, los cargamos al store
-        if (userData.cart && userData.cart.length > 0) {
+        // 4. Sincronización del Carrito
+        if (userData.cart && Array.isArray(userData.cart)) {
           useCartStore.getState().setCart(userData.cart);
         }
       },
 
       logout: () => {
-        // 1. Limpiamos estado de usuario
-        set({ user: null, isLoggedIn: false });
-
-        // 2. Limpiamos el carrito por seguridad
+        set({ user: null, token: null, isLoggedIn: false });
         useCartStore.getState().clearCart();
         
-        // 3. Limpieza de cookies de sesión
-        // Eliminamos 'token' y 'session' para que el Proxy bloquee el acceso
         if (typeof document !== 'undefined') {
           document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          console.log("🧹 Sesión cerrada y cookies eliminadas.");
+          localStorage.removeItem('token');
+          // Limpiamos el storage de Zustand manualmente para evitar datos persistentes corruptos
+          localStorage.removeItem('auth-storage');
         }
       },
     }),
     { 
-      name: 'auth-storage' // Nombre de la clave en LocalStorage
+      name: 'auth-storage',
+      // Opcional: puedes usar partialize para no guardar datos sensibles, 
+      // pero para este caso mantendremos la estructura actual.
     }
   )
 );
