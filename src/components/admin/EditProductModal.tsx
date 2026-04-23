@@ -24,28 +24,13 @@ export const EditProductModal = ({
   isCreating = false
 }: EditProductModalProps) => {
   const { categories, addCategory } = useCategoryStore();
-  const { stocks } = useStockStore(); 
+  // Eliminamos la lógica compleja de búsqueda de stockData externa
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCatName, setNewCatName] = useState("");
 
-
-  // Sincronización: Buscamos el stock real del producto actual
-  const stockData = stocks.find((s: any) => {
-    // Forzamos la lectura de IDs tratando los valores como 'any' para evitar el error 'never'
-    const stockProdId = typeof s.producto === 'object' 
-      ? (s.producto as any)?._id 
-      : s.producto;
-
-    const currentProdId = typeof product === 'object' 
-      ? (product as any)?._id 
-      : product;
-    
-    return String(stockProdId) === String(currentProdId);
-  });
-
-  const currentRealStock = stockData ? stockData.totalQuantity : 0;
-
-
+  // AHORA: El stock real viene directamente del objeto product que pasamos al modal
+  // Si no está creando, simplemente leemos product.stock (que ya trae el 56 de la DB)
+  const currentRealStock = product?.stock ?? 0;
 
   useEffect(() => {
     if (isOpen) {
@@ -170,7 +155,7 @@ export const EditProductModal = ({
                 <select className={inputClass} value={product.category || ""} onChange={handleCategoryChange}>
                   <option value="">Seleccionar...</option>
                   {categories.map((cat: any) => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    <option key={cat.id || cat._id} value={cat.name}>{cat.name}</option>
                   ))}
                   <option value="NEW_CATEGORY" className="text-blue-600 font-bold italic">+ Crear Nueva...</option>
                 </select>
@@ -191,7 +176,7 @@ export const EditProductModal = ({
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase mb-2 block ml-2 tracking-widest opacity-40">
-                  Stock {isCreating ? "" : "(Sincronizado)"}
+                  Stock {isCreating ? "" : "(Lectura)"}
                 </label>
                 <input 
                   type="number" 
