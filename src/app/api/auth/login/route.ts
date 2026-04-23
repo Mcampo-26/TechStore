@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import Log from '@/models/Log'; // <--- 1. IMPORTA EL MODELO DE LOG
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -9,14 +10,12 @@ export async function POST(req: Request) {
     await dbConnect();
     const { email, password } = await req.json();
 
-    // 1. BUSQUEDA FORZADA: 
-    // Añadimos .lean() para que nos dé un objeto JS puro y no filtre campos del esquema.
-    // Añadimos .select("+name +nombre") para obligar a traer esos campos.
     const user = await User.findOne({ email: email.toLowerCase() })
       .select("+password +name +nombre")
       .lean();
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      // OPCIONAL: Podrías loguear intentos fallidos aquí con nivel 'warning'
       return NextResponse.json({ message: "Credenciales inválidas" }, { status: 401 });
     }
 
@@ -27,27 +26,37 @@ export async function POST(req: Request) {
       { expiresIn: '24h' }
     );
 
-    // 2. LÓGICA DE DETECCIÓN (Ahora con los datos que vimos en tu log)
-    // Tu log dice que el campo es "name": "Raul"
     const nameFromDb = user.name || user.nombre || "";
-    
-    // Si el nombre es "admin" o está vacío, usamos el email. Si no, usamos el nombre real.
     const cleanName = (nameFromDb.toLowerCase() === 'admin' || nameFromDb === "") 
       ? user.email.split('@')[0] 
       : nameFromDb;
 
-    console.log("-----------------------------------------");
-    console.log(`✅ LOGIN EXITOSO: ${user.email}`);
-    console.log(`📝 NOMBRE RECUPERADO DE DB: "${nameFromDb}"`);
-    console.log(`✨ ENVIANDO AL FRONTEND: "${cleanName}"`);
-    console.log("-----------------------------------------");
+    // --- 2. REGISTRO EN LA AUDITORÍA ---
+    // Lo hacemos antes de enviar la respuesta al usuario
+    try {
+      await Log.create({
+        tipo: 'AUTH_LOGIN',
+        nivel: 'info',
+        usuarioId: user._id.toString(),
+        usuarioNombre: cleanName,
+        detalles: `Inicio de sesión exitoso desde terminal web.`,
+        metadata: { 
+          email: user.email,
+          userAgent: req.headers.get('user-agent') // Para saber desde qué navegador entró
+        }
+      });
+    } catch (logError) {
+      // Si falla el log, que no se trabe el login, solo avisamos en consola
+      console.error("⚠️ No se pudo guardar el log de auditoría:", logError);
+    }
+    // ------------------------------------
 
     const response = NextResponse.json({
       message: "Login exitoso",
       token: token,
       user: {
         id: user._id.toString(),
-        nombre: cleanName, // Este es el que recibe Zustand
+        nombre: cleanName,
         email: user.email,
         role: user.role,
         cart: user.cart || []

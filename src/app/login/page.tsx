@@ -112,7 +112,7 @@ export default function LoginPage() {
               <TechLoader 
                 mode="login" 
                 // Priorizamos nombre que viene de la normalización del store
-                userName={user?.nombre || user?.name || "Cargando..."} 
+                userName={user?.nombre || user?.nombre|| "Cargando..."} 
                 isStepTwo={isLoggedIn} 
               />
             </motion.div>

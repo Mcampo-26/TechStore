@@ -1,70 +1,24 @@
 "use client";
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState } from 'react';
 import { useStockStore } from '@/store/useStockStore';
+import { useProductStore } from '@/store/useProductStore';
+import { useLogStore } from '@/store/useLogStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import Swal from 'sweetalert2';
 
 export const useStock = () => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const setStocks = useStockStore((state) => state.setStocks);
-  
-  // Obtenemos el usuario del store (normalizado como 'id' en tu useAuthStore)
+  const { updateStockFromMovement } = useStockStore();
+  const { products, updateProductInList } = useProductStore();
+  const addLogToTerminal = useLogStore((state) => state.addLog);
   const user = useAuthStore((state) => state.user);
 
-  // Memorizamos el Toast para evitar recrearlo innecesariamente
-  const Toast = useMemo(() => Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-  }), []);
-
-  const fetchAllStock = useCallback(async () => {
-    try {
-      const res = await fetch('/api/stock');
-      if (!res.ok) throw new Error('No se pudo obtener el inventario');
-      
-      const data = await res.json();
-      setStocks(data);
-    } catch (error) {
-      console.error("Error fetching stock:", error);
-      Toast.fire({ icon: 'error', title: 'Error al cargar el inventario' });
-    }
-  }, [setStocks, Toast]);
-
-  const applyMovimiento = async (
-    productoInput: any, // Puede ser el ID (string) o el objeto Producto completo
-    cantidad: number, 
-    tipo: 'entrada' | 'salida', 
-    motivo: string
-  ) => {
-    
-    // 1. EXTRAER ID DEL PRODUCTO (Evita el error [object Object])
-    const productoId = typeof productoInput === 'object' 
-      ? (productoInput._id || productoInput.id) 
-      : productoInput;
-
-    // 2. VALIDACIÓN DE IDENTIDAD (Debe estar logueado)
-    const currentUserId = user?.id; // Usamos .id porque tu store ya lo normalizó
-    
-    if (!currentUserId) {
-      Toast.fire({
-        icon: 'warning',
-        title: 'Sesión no válida',
-        text: 'Debes iniciar sesión para registrar movimientos.'
-      });
-      return false;
-    }
-
-    if (!productoId || productoId === '[object Object]') {
-      Toast.fire({ icon: 'error', title: 'ID de producto inválido' });
-      return false;
-    }
+  const applyMovimiento = async (productoInput: any, cantidad: number, tipo: 'entrada' | 'salida', motivo: string) => {
+    const productoId = typeof productoInput === 'object' ? (productoInput._id || productoInput.id) : productoInput;
+    if (!productoId) return false;
 
     setIsProcessing(true);
-
     try {
       const res = await fetch(`/api/stock/${productoId}`, {
         method: 'POST',
@@ -72,39 +26,36 @@ export const useStock = () => {
         body: JSON.stringify({ 
           cantidad, 
           tipo, 
-          motivo,
-          usuarioId: currentUserId // Enviamos el ID al backend
+          motivo, 
+          usuarioNombre: user?.nombre || 'Raul' 
         }),
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error en servidor');
 
-      if (!res.ok) {
-        throw new Error(data.msg || 'Error en la operación');
+      if (data.success) {
+        // 1. Terminal
+        if (data.nuevoLog) addLogToTerminal(data.nuevoLog);
+
+        // 2. Store de Stock (usando campo stock corregido)
+        updateStockFromMovement(productoId, data.nuevoTotal, data.nuevoLog);
+
+        // 3. Store de Productos (La lista que ves en el inventario)
+        const prod = products.find(p => p._id === productoId || p.id === productoId);
+        if (prod) {
+          updateProductInList({ ...prod, stock: data.nuevoTotal });
+        }
+        return true;
       }
-      
-      Toast.fire({
-        icon: 'success',
-        title: 'Movimiento registrado con éxito'
-      });
-      
-      // 3. ACTUALIZACIÓN EN TIEMPO REAL: Refrescamos el store global
-      await fetchAllStock(); 
-      return true;
-
+      return false;
     } catch (error: any) {
-      console.error("Error en applyMovimiento:", error);
-      Toast.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'No se pudo registrar el movimiento'
-      });
+      Swal.fire("Error", error.message, "error");
       return false;
     } finally {
-      // Pequeño retraso para evitar spam de clics
-      setTimeout(() => setIsProcessing(false), 600); 
+      setIsProcessing(false);
     }
   };
 
-  return { fetchAllStock, applyMovimiento, isProcessing };
+  return { applyMovimiento, isProcessing };
 };
