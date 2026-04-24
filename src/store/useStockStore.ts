@@ -1,19 +1,39 @@
+"use client";
 import { create } from 'zustand';
+
+export interface Product {
+  _id: string;
+  id?: string; 
+  name: string;
+  price: number;
+  image: string;
+  image2?: string;
+  image3?: string;
+  category: string;
+  description: string;
+  stock: number;
+  isOferta?: boolean; 
+  descuento?: number;          
+  descuentoPorcentaje?: number; 
+}
 
 interface Lote {
   _id: string;
   codigo: string;
   cantidad: number;
   costoUnitario: number;
-  ubicacion: string;
+  vencimiento?: string;
+  fechaVencimiento?: string;
 }
 
-interface Stock {
+export interface Stock {
   _id: string;
-  producto: any;
-  stock: number; // CAMBIADO: Ahora coincide con tu imagen de Mongo
+  producto: Product; 
+  stock: number; 
+  totalQuantity?: number;
   lotes: Lote[];
   stockMinimo: number;
+  costoPromedio?: number;
   updatedAt: string;
 }
 
@@ -32,19 +52,17 @@ interface StockState {
   movimientos: Movimiento[];
   isLoading: boolean;
   setStocks: (stocks: Stock[]) => void;
-  setMovimientos: (movs: Movimiento[]) => void;
   setLoading: (status: boolean) => void;
   fetchAllStock: () => Promise<void>;
   updateStockFromMovement: (id: string, total: number, log: Movimiento) => void;
 }
 
-export const useStockStore = create<StockState>((set, get) => ({
+export const useStockStore = create<StockState>((set) => ({
   stocks: [],
   movimientos: [],
   isLoading: false,
 
   setStocks: (stocks) => set({ stocks, isLoading: false }),
-  setMovimientos: (movimientos) => set({ movimientos, isLoading: false }),
   setLoading: (status) => set({ isLoading: status }),
 
   fetchAllStock: async () => {
@@ -52,12 +70,20 @@ export const useStockStore = create<StockState>((set, get) => ({
     try {
       const res = await fetch('/api/stock');
       const data = await res.json();
-      // Mapeamos para asegurar que 'stock' tenga el valor de la DB
-      const stocksData = (Array.isArray(data) ? data : data.stocks || []).map((s: any) => ({
+      
+      const stocksData = (Array.isArray(data) ? data : []).map((s: any) => ({
         ...s,
-        stock: s.stock || s.totalQuantity || 0 // Doble validación
+        stock: s.totalQuantity ?? s.stock ?? 0, 
+        lotes: (s.lotes || []).map((l: any) => ({
+          ...l,
+          fechaVencimiento: l.vencimiento || l.fechaVencimiento || null,
+          fechaInicio: l.createdAt || l.fechaInicio || null,
+          // CAMPOS DE AUDITORÍA
+          usuario: l.usuarioNombre || l.usuario || "Admin",
+          observacion: l.motivo || l.observacion || "Carga inicial de stock"
+        }))
       }));
-      set({ stocks: stocksData, movimientos: data.movimientos || [], isLoading: false });
+      set({ stocks: stocksData, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
     }
@@ -66,7 +92,7 @@ export const useStockStore = create<StockState>((set, get) => ({
   updateStockFromMovement: (id, total, log) => {
     set((state) => ({
       stocks: state.stocks.map((s) => {
-        const isMatch = s._id === id || (typeof s.producto === 'string' ? s.producto === id : s.producto?._id === id);
+        const isMatch = s._id === id || s.producto?._id === id;
         return isMatch ? { ...s, stock: total, updatedAt: new Date().toISOString() } : s;
       }),
       movimientos: [log, ...state.movimientos].slice(0, 50)

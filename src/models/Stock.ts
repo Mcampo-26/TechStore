@@ -1,6 +1,5 @@
 import mongoose, { Schema, model, models, Document } from 'mongoose';
 
-// 1. Interfaces para TypeScript
 interface ILote {
   codigo: string;
   cantidad: number;
@@ -15,13 +14,13 @@ interface ILote {
 export interface IStock extends Document {
   producto: mongoose.Types.ObjectId;
   totalQuantity: number;
+  costoPromedio: number; // Nuevo: Para mostrar en la interfaz de detalles
   lotes: ILote[];
   stockMinimo: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// 2. Esquema de Lotes (Sub-documento)
 const LoteSchema = new Schema<ILote>({
   codigo: { type: String, required: true },
   cantidad: { type: Number, required: true, default: 0 },
@@ -31,36 +30,40 @@ const LoteSchema = new Schema<ILote>({
   ubicacion: { type: String, default: "Deposito Central" }
 }, { timestamps: true });
 
-// 3. Esquema de Stock Principal
 const StockSchema = new Schema<IStock>({
   producto: { 
     type: Schema.Types.ObjectId, 
-    ref: 'Product', 
-    required: true,
+    ref: 'Product', // Referencia vital para el .populate()
+    required: true, 
     unique: true 
   },
-  totalQuantity: { 
-    type: Number, 
-    default: 0 
-  },
+  totalQuantity: { type: Number, default: 0 },
+  costoPromedio: { type: Number, default: 0 }, // Calculado automáticamente
   lotes: [LoteSchema],
-  stockMinimo: { 
-    type: Number, 
-    default: 5 
-  },
-}, { 
-  timestamps: true 
-});
+  stockMinimo: { type: Number, default: 5 },
+}, { timestamps: true });
 
-// 4. Middleware para calcular el total antes de guardar
-// Usamos una función async estándar para evitar el error ts(2349) con 'next'
-StockSchema.pre('save', async function() {
-  if (this.lotes) {
+// MIDDLEWARE: Recalcula totales y costos antes de guardar
+StockSchema.pre('save', async function(next) {
+  if (this.lotes && this.lotes.length > 0) {
+    // 1. Calcular Cantidad Total
     this.totalQuantity = this.lotes.reduce((acc, lote) => acc + lote.cantidad, 0);
+
+    // 2. Calcular Costo Promedio Ponderado (CPP)
+    // Útil para saber cuánto vale tu inventario actual
+    const inversionTotal = this.lotes.reduce((acc, lote) => {
+      return acc + (lote.cantidad * lote.costoUnitario);
+    }, 0);
+
+    this.costoPromedio = this.totalQuantity > 0 
+      ? inversionTotal / this.totalQuantity 
+      : 0;
+  } else {
+    this.totalQuantity = 0;
+    this.costoPromedio = 0;
   }
+
 });
 
-// 5. Exportación del Modelo
 const Stock = models.Stock || model<IStock>('Stock', StockSchema);
-
 export default Stock;
