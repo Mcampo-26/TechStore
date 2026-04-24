@@ -70,7 +70,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         const currentUser = get().user;
-
+      
         // 1. Registro de Auditoría (Antes de limpiar el estado)
         if (currentUser) {
           try {
@@ -89,16 +89,21 @@ export const useAuthStore = create<AuthState>()(
             console.error("⚠️ Fallo al registrar log de salida:", error);
           }
         }
-
+      
         // 2. Limpieza de Cookies y Storage
         if (typeof document !== 'undefined') {
           document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           localStorage.removeItem('token');
           localStorage.removeItem('auth-storage');
         }
-
+      
         // 3. Reset de estados globales
-        useCartStore.getState().clearCart();
+        try {
+          useCartStore.getState().clearCart();
+        } catch (err) {
+          console.warn("Cart store no disponible");
+        }
+      
         set({ user: null, token: null, isLoggedIn: false });
       },
     }),
